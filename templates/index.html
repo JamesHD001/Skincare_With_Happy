@@ -1,14 +1,43 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- BASIC META -->
     <meta charset="UTF-8">
-    <title>Skincare With Happy</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- SEO META -->
+    <title>Skincare With Happy | Clinically Guided Skincare</title>
+    <meta name="description" content="Skincare With Happy offers clinically guided skincare solutions with a focus on education, trust, and healthy skin routines.">
+    <meta name="keywords" content="skincare, skincare routines, sensitive skin, skincare education, skincare products">
+    <meta name="author" content="Skincare With Happy">
+
+    <!-- OPEN GRAPH -->
+    <meta property="og:title" content="Skincare With Happy">
+    <meta property="og:description" content="Healthy skin starts with understanding. Clinically guided skincare solutions.">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="logo.jpeg">
+    <meta property="og:url" content="https://skincarewithhappy.com">
+
+    <!-- FAVICON -->
+    <link rel="icon" href="logo.jpeg" type="image/jpeg">
+
     <style>
+        :root {
+            --primary: #1E3A8A;
+            --accent: #FF8C00;
+            --bg-light: #f5f7fa;
+            --bg-soft: #e9edf5;
+        }
+
+        * { box-sizing: border-box; }
+
         body {
             margin: 0;
-            font-family: Arial, Helvetica, sans-serif;
-            background-color: #f5f7fa;
-            color: #1E3A8A;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background-color: var(--bg-light);
+            color: var(--primary);
+            line-height: 1.6;
         }
 
         /* NAVBAR */
@@ -18,52 +47,88 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 2px 6px rgba(80,0,0,0.05);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            transition: box-shadow 0.3s ease;
         }
 
-        header nav a {
+        header.scrolled {
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            font-size: 18px;
+        }
+
+        .logo img {
+            height: 42px;
+        }
+
+        nav a {
             margin: 0 15px;
             text-decoration: none;
-            color: #1E3A8A;
+            color: var(--primary);
             font-weight: 500;
+            position: relative;
+        }
+
+        nav a::after {
+            content: "";
+            position: absolute;
+            width: 0;
+            height: 2px;
+            background: var(--accent);
+            left: 0;
+            bottom: -5px;
+            transition: width 0.3s ease;
+        }
+
+        nav a:hover::after {
+            width: 100%;
         }
 
         .nav-btn {
             background: #4CAF50;
             color: #fff;
             padding: 8px 18px;
-            border-radius: 4px;
+            border-radius: 6px;
             text-decoration: none;
         }
 
         /* HERO */
         .hero {
-            padding: 80px 40px;
+            padding: 90px 40px;
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 40px;
-            background: #e9edf5;
+            background: var(--bg-soft);
+            align-items: center;
         }
 
         .hero h1 {
-            font-size: 42px;
+            font-size: 44px;
             margin-bottom: 20px;
-        }
-
-        .hero p {
-            font-size: 16px;
-            line-height: 1.6;
         }
 
         .hero button {
             margin-top: 25px;
-            background: #FF8C00;
+            background: var(--accent);
             color: #fff;
             border: none;
-            padding: 12px 26px;
-            font-size: 15px;
-            border-radius: 4px;
+            padding: 14px 30px;
+            border-radius: 6px;
             cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .hero button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 14px rgba(0,0,0,0.15);
         }
 
         /* CATEGORIES */
@@ -76,18 +141,28 @@
 
         .category-card {
             background: #ffffff;
-            height: 140px;
-            border-radius: 6px;
+            height: 150px;
+            border-radius: 12px;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-weight: bold;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
 
-        /* JUST IN */
+        .category-card:hover {
+            transform: translateY(-6px);
+        }
+
+        .category-card.active {
+            outline: 3px solid var(--accent);
+        }
+
+        /* PRODUCTS */
         .section {
-            padding: 60px 40px;
+            padding: 70px 40px;
             background: #ffffff;
         }
 
@@ -105,31 +180,26 @@
         .product-card {
             background: #f9fafc;
             padding: 20px;
-            border-radius: 6px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            transition: transform 0.3s ease;
+        }
+
+        .product-card:hover {
+            transform: translateY(-5px);
         }
 
         .product-img {
             background: #ddd;
-            height: 120px;
-            border-radius: 4px;
+            height: 140px;
+            border-radius: 8px;
             margin-bottom: 15px;
         }
 
-        .product-card button {
-            margin-top: 10px;
-            background: #1E3A8A;
-            color: #fff;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        /* TRUST SECTION */
+        /* TRUST */
         .trust {
-            padding: 60px 40px;
-            background: #e9edf5;
+            padding: 70px 40px;
+            background: var(--bg-soft);
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 30px;
@@ -138,18 +208,35 @@
 
         .trust div {
             background: #ffffff;
-            padding: 25px;
-            border-radius: 6px;
+            padding: 30px;
+            border-radius: 14px;
         }
 
         /* FOOTER */
         footer {
-            background: #1E3A8A;
+            background: var(--primary);
             color: #fff;
-            padding: 40px;
+            padding: 60px 40px;
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 30px;
+        }
+
+        .footer-logo {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .footer-logo img {
+            width: 150px;
+            padding-left: 33px;
+            border-radius: 15px
+        }
+
+        .footer-logo span {
+            font-size: 22px;
+            font-weight: light;
+            font-style: italic;
         }
 
         footer a {
@@ -157,18 +244,39 @@
             text-decoration: none;
             display: block;
             margin-bottom: 8px;
+            opacity: 0.85;
+        }
+
+        footer a:hover {
+            opacity: 1;
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 900px) {
+            .hero,
+            .categories,
+            .products,
+            .trust,
+            footer {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
 
 <header>
-    <strong>Skincare With Happy</strong>
+    <div class="logo">
+        <img src="logo.jpeg" alt="Skincare With Happy Logo">
+        <span>SkincareWithHappy</span>
+    </div>
+
     <nav>
         <a href="shop.html">Shop</a>
         <a href="learn.html">Learn</a>
         <a href="about.html">About</a>
     </nav>
+
     <a href="#" class="nav-btn">Account</a>
 </header>
 
@@ -179,9 +287,8 @@
             Skincare With Happy is built on trust, education, and clinically guided
             skincare solutions designed to support your skin’s natural balance.
         </p>
-        <button>Explore Products</button>
+        <button id="exploreBtn">Explore Products</button>
     </div>
-    <div></div>
 </section>
 
 <section class="categories">
@@ -190,57 +297,61 @@
     <div class="category-card">Skincare Routines</div>
 </section>
 
-<section class="section">
+<section class="section" id="products">
     <h2>Just In</h2>
     <div class="products">
-        <div class="product-card">
-            <div class="product-img"></div>
-            <p>Gentle Cleanser for Sensitive Skin</p>
-            <button>View</button>
-        </div>
-        <div class="product-card">
-            <div class="product-img"></div>
-            <p>Hydrating Serum with Ceramides</p>
-            <button>View</button>
-        </div>
-        <div class="product-card">
-            <div class="product-img"></div>
-            <p>Soothing Moisturizer</p>
-            <button>View</button>
-        </div>
+        <div class="product-card"><div class="product-img"></div><p>Gentle Cleanser</p></div>
+        <div class="product-card"><div class="product-img"></div><p>Hydrating Serum</p></div>
+        <div class="product-card"><div class="product-img"></div><p>Soothing Moisturizer</p></div>
     </div>
 </section>
 
 <section class="trust">
-    <div>
-        <h3>Clinically Guided</h3>
-        <p>Formulated with evidence-based ingredients.</p>
-    </div>
-    <div>
-        <h3>Education First</h3>
-        <p>We help you understand before you buy.</p>
-    </div>
-    <div>
-        <h3>Payment Before Delivery</h3>
-        <p>Secure and verified online checkout.</p>
-    </div>
+    <div><h3>Clinically Guided</h3><p>Evidence-based ingredients.</p></div>
+    <div><h3>Education First</h3><p>We help you understand.</p></div>
+    <div><h3>Secure Payments</h3><p>Safe online checkout.</p></div>
 </section>
 
 <footer>
-    <div>
-        <strong>Skincare With Happy</strong>
-        <p>Calm. Clear. Confident skin.</p>
+    <div class="footer-logo">
+        <span style="font-weight: light,padding-bottom: 0">SkincareWithHappy</span>
+        <img src="logo.jpeg" alt="Skincare With Happy Logo" style>        
+        <small style="font-style: italic, padding-top: 0">What Gentle care. Calm, Clear & Visible glow. Confident skin.</small>
     </div>
+
     <div>
         <a href="shop.html">Shop</a>
         <a href="learn.html">Learn</a>
         <a href="about.html">About</a>
         <a href="contact.html">Contact</a>
     </div>
+
     <div>
         <p>Subscribe for skincare education</p>
     </div>
 </footer>
+
+<script>
+    // Header shadow on scroll
+    const header = document.querySelector("header");
+    window.addEventListener("scroll", () => {
+        header.classList.toggle("scrolled", window.scrollY > 20);
+    });
+
+    // Smooth scroll CTA
+    document.getElementById("exploreBtn").addEventListener("click", () => {
+        document.getElementById("products").scrollIntoView({ behavior: "smooth" });
+    });
+
+    // Category interaction
+    const categories = document.querySelectorAll(".category-card");
+    categories.forEach(card => {
+        card.addEventListener("click", () => {
+            categories.forEach(c => c.classList.remove("active"));
+            card.classList.add("active");
+        });
+    });
+</script>
 
 </body>
 </html>
