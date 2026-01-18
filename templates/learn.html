@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Learn | Skincare With Happy</title>
     <style>
+        :root {
+            --primary: #1E3A8A;
+            --accent: #FF8C00;
+            --bg-light: #f5f7fa;
+            --bg-soft: #e9edf5;
+        }
         body {
             margin: 0;
             font-family: Arial, Helvetica, sans-serif;
@@ -19,21 +25,56 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 2px 6px rgba(80,0,0,0.05);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            transition: box-shadow 0.3s ease;
         }
 
-        header nav a {
+        header.scrolled {
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            font-size: 18px;
+        }
+
+        .logo img {
+            height: 42px;
+        }
+
+        nav a {
             margin: 0 15px;
             text-decoration: none;
-            color: #1E3A8A;
+            color: var(--primary);
             font-weight: 500;
+            position: relative;
+        }
+
+        nav a::after {
+            content: "";
+            position: absolute;
+            width: 0;
+            height: 2px;
+            background: var(--accent);
+            left: 0;
+            bottom: -5px;
+            transition: width 0.3s ease;
+        }
+
+        nav a:hover::after {
+            width: 100%;
         }
 
         .nav-btn {
             background: #4CAF50;
             color: #fff;
             padding: 8px 18px;
-            border-radius: 4px;
+            border-radius: 6px;
             text-decoration: none;
         }
 
@@ -125,12 +166,33 @@
 
         /* FOOTER */
         footer {
-            background: #1E3A8A;
+            background: var(--primary);
             color: #fff;
-            padding: 40px;
+            padding: 60px 40px;
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 30px;
+        }
+
+        .footer-logo {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .footer-logo img {
+            width: 170px;
+            padding-left: 40px
+        }
+
+        .footer-logo span {
+            font-size: 28px;
+            font-weight: light;
+            font-style: italic;
+        }
+
+        .footer-logo small{
+            font-size: 8px;
+            padding-left: 10px;
         }
 
         footer a {
@@ -138,13 +200,22 @@
             text-decoration: none;
             display: block;
             margin-bottom: 8px;
+            opacity: 0.85;
+        }
+
+        footer a:hover {
+            opacity: 1;
         }
     </style>
 </head>
 <body>
 
 <header>
-    <strong>Skincare With Happy</strong>
+    <div class="logo">
+        <img src="logo.png" alt="Skincare With Happy Logo">
+        <span>SkincareWithHappy</span>
+    </div>
+
     <nav>
         <a href="shop.html">Shop</a>
         <a href="learn.html">Learn</a>
@@ -211,16 +282,19 @@
 </section>
 
 <footer>
-    <div>
-        <strong>Skincare With Happy</strong>
-        <p>Calm. Clear. Confident skin.</p>
+    <div class="footer-logo">
+        <span style="font-weight: light,padding-bottom: 0">SkincareWithHappy</span>
+        <img src="logo.png" alt="Skincare With Happy Logo" style>        
+        <small style="font-style: italic, padding-top: 0">Gentle care. Calm, Clear & Visible glow. Confident skin!</small>
     </div>
+
     <div>
         <a href="shop.html">Shop</a>
         <a href="learn.html">Learn</a>
         <a href="about.html">About</a>
         <a href="contact.html">Contact</a>
     </div>
+
     <div>
         <p>Subscribe for skincare education</p>
     </div>
