@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Skincare With Happy{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    {% block styles %}{% endblock %}
+
+
+</head>
+<body>
+
+<header>
+    <div class="logo">
+        <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Skincare With Happy Logo">
+        <span>SkincareWithHappy</span>
+    </div>
+
+    <button class="hamburger" id="hamburger">
+        ☰
+    </button>
+
+    <nav id="navMenu">
+        <a href="{{ url_for('shop') }}">Shop</a>
+        <a href="{{ url_for('learn') }}">Learn</a>
+        <a href="{{ url_for('about') }}">About</a>
+        <a href="{{ url_for('contact') }}">Contact</a>
+        <a href="{{ url_for('cart') }}" class="nav-btn mobile-only">Account</a>
+    </nav>
+
+    <a href="/account" class="nav-btn desktop-only">Account</a>
+    
+</header>
+
+<main>
+    {% block content %}{% endblock %}
+</main>
+
+<footer>
+    <div class="footer-logo">
+        <img src="/static/img/logo.png" alt="Skincare With Happy Logo">
+        <span>SkincareWithHappy</span>
+        <small>Gentle care. Calm, Clear & Visible glow. Confident skin!</small>
+    </div>
+
+    <div>
+        <a href="/shop">Shop</a>
+        <a href="/learn">Learn</a>
+        <a href="/about">About</a>
+    </div>
+
+    <div>
+        <p>Subscribe for skincare education</p>
+    </div>
+</footer>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+</body>
+</html>

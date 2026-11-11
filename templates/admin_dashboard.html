@@ -1,138 +1,11 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Admin Dashboard | Skincare With Happy</title>
+{% extends "layout.html" %}
+{% block title %}Admin Dashboard | Skincare With Happy{% endblock %}
 
-<style>
-body {
-    margin: 0;
-    font-family: Arial, Helvetica, sans-serif;
-    background: #f5f7fa;
-    color: #1E3A8A;
-}
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
 
-/* LAYOUT */
-.dashboard {
-    display: grid;
-    grid-template-columns: 240px 1fr;
-    min-height: 100vh;
-}
-
-/* SIDEBAR */
-.sidebar {
-    background: #1E3A8A;
-    color: #fff;
-    padding: 30px 20px;
-}
-
-.sidebar h2 {
-    margin-top: 0;
-}
-
-.sidebar a {
-    display: block;
-    color: #ffffff;
-    text-decoration: none;
-    margin: 15px 0;
-    font-size: 15px;
-}
-
-/* MAIN */
-.main {
-    padding: 30px;
-}
-
-/* TOP BAR */
-.topbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 30px;
-}
-
-.logout {
-    background: #F44336;
-    color: #fff;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-/* STATS */
-.stats {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 20px;
-    margin-bottom: 40px;
-}
-
-.stat-card {
-    background: #ffffff;
-    padding: 20px;
-    border-radius: 6px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-}
-
-.stat-card h3 {
-    margin: 0;
-    font-size: 16px;
-}
-
-.stat-card p {
-    font-size: 22px;
-    margin: 10px 0 0;
-    color: #4CAF50;
-}
-
-/* TABLE */
-.table-box {
-    background: #ffffff;
-    padding: 20px;
-    border-radius: 6px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-}
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-th, td {
-    padding: 12px;
-    text-align: left;
-    border-bottom: 1px solid #eee;
-}
-
-th {
-    background: #e9edf5;
-}
-
-.status-paid {
-    color: #4CAF50;
-    font-weight: bold;
-}
-
-.status-pending {
-    color: #FF8C00;
-    font-weight: bold;
-}
-
-/* ACTION BUTTONS */
-.action-btn {
-    background: #1E3A8A;
-    color: #fff;
-    border: none;
-    padding: 6px 12px;
-    border-radius: 4px;
-    cursor: pointer;
-}
-</style>
-</head>
-
-<body>
-
+{% block content %}
 <div class="dashboard">
 
     <!-- SIDEBAR -->
@@ -177,7 +50,6 @@ th {
         <!-- ORDERS TABLE -->
         <div class="table-box">
             <h2>Recent Orders</h2>
-
             <table>
                 <tr>
                     <th>Order ID</th>
@@ -187,7 +59,6 @@ th {
                     <th>Status</th>
                     <th>Action</th>
                 </tr>
-
                 <tr>
                     <td>#1023</td>
                     <td>Jane Doe</td>
@@ -196,7 +67,6 @@ th {
                     <td>Processing</td>
                     <td><button class="action-btn">View</button></td>
                 </tr>
-
                 <tr>
                     <td>#1024</td>
                     <td>Mark Smith</td>
@@ -209,8 +79,5 @@ th {
         </div>
 
     </main>
-
 </div>
-
-</body>
-</html>
+{% endblock %}

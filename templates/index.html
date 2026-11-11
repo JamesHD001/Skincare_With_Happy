@@ -1,288 +1,7 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <!-- BASIC META -->
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <!-- SEO META -->
-    <title>Skincare With Happy | Clinically Guided Skincare</title>
-    <meta name="description" content="Skincare With Happy offers clinically guided skincare solutions with a focus on education, trust, and healthy skin routines.">
-    <meta name="keywords" content="skincare, skincare routines, sensitive skin, skincare education, skincare products">
-    <meta name="author" content="Skincare With Happy">
-
-    <!-- OPEN GRAPH -->
-    <meta property="og:title" content="Skincare With Happy">
-    <meta property="og:description" content="Healthy skin starts with understanding. Clinically guided skincare solutions.">
-    <meta property="og:type" content="website">
-    <meta property="og:image" content="logo.jpeg">
-    <meta property="og:url" content="https://skincarewithhappy.com">
-
-    <!-- FAVICON -->
-    <link rel="icon" href="logo.jpeg" type="image/jpeg">
-
-    <style>
-        :root {
-            --primary: #1E3A8A;
-            --accent: #FF8C00;
-            --bg-light: #f5f7fa;
-            --bg-soft: #e9edf5;
-        }
-
-        * { box-sizing: border-box; }
-
-        body {
-            margin: 0;
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-            background-color: var(--bg-light);
-            color: var(--primary);
-            line-height: 1.6;
-        }
-
-        /* NAVBAR */
-        header {
-            background: #ffffff;
-            padding: 16px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            transition: box-shadow 0.3s ease;
-        }
-
-        header.scrolled {
-            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-        }
-
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-weight: 600;
-            font-size: 18px;
-        }
-
-        .logo img {
-            height: 42px;
-        }
-
-        nav a {
-            margin: 0 15px;
-            text-decoration: none;
-            color: var(--primary);
-            font-weight: 500;
-            position: relative;
-        }
-
-        nav a::after {
-            content: "";
-            position: absolute;
-            width: 0;
-            height: 2px;
-            background: var(--accent);
-            left: 0;
-            bottom: -5px;
-            transition: width 0.3s ease;
-        }
-
-        nav a:hover::after {
-            width: 100%;
-        }
-
-        .nav-btn {
-            background: #4CAF50;
-            color: #fff;
-            padding: 8px 18px;
-            border-radius: 6px;
-            text-decoration: none;
-        }
-
-        /* HERO */
-        .hero {
-            padding: 90px 40px;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 40px;
-            background: var(--bg-soft);
-            align-items: center;
-        }
-
-        .hero h1 {
-            font-size: 44px;
-            margin-bottom: 20px;
-        }
-
-        .hero button {
-            margin-top: 25px;
-            background: var(--accent);
-            color: #fff;
-            border: none;
-            padding: 14px 30px;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        .hero button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 14px rgba(0,0,0,0.15);
-        }
-
-        /* CATEGORIES */
-        .categories {
-            padding: 60px 40px;
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 25px;
-        }
-
-        .category-card {
-            background: #ffffff;
-            height: 150px;
-            border-radius: 12px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-weight: 600;
-            cursor: pointer;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        .category-card:hover {
-            transform: translateY(-6px);
-        }
-
-        .category-card.active {
-            outline: 3px solid var(--accent);
-        }
-
-        /* PRODUCTS */
-        .section {
-            padding: 70px 40px;
-            background: #ffffff;
-        }
-
-        .section h2 {
-            text-align: center;
-            margin-bottom: 40px;
-        }
-
-        .products {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 30px;
-        }
-
-        .product-card {
-            background: #f9fafc;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-            transition: transform 0.3s ease;
-        }
-
-        .product-card:hover {
-            transform: translateY(-5px);
-        }
-
-        .product-img {
-            background: #ddd;
-            height: 140px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-        }
-
-        /* TRUST */
-        .trust {
-            padding: 70px 40px;
-            background: var(--bg-soft);
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 30px;
-            text-align: center;
-        }
-
-        .trust div {
-            background: #ffffff;
-            padding: 30px;
-            border-radius: 14px;
-        }
-
-        /* FOOTER */
-        footer {
-            background: var(--primary);
-            color: #fff;
-            padding: 60px 40px;
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 30px;
-        }
-
-        .footer-logo {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .footer-logo img {
-            width: 170px;
-            padding-left: 40px
-        }
-
-        .footer-logo span {
-            font-size: 28px;
-            font-weight: light;
-            font-style: italic;
-        }
-
-        .footer-logo small{
-            font-size: 8px;
-            padding-left: 10px;
-        }
-
-        footer a {
-            color: #ffffff;
-            text-decoration: none;
-            display: block;
-            margin-bottom: 8px;
-            opacity: 0.85;
-        }
-
-        footer a:hover {
-            opacity: 1;
-        }
-
-        /* RESPONSIVE */
-        @media (max-width: 900px) {
-            .hero,
-            .categories,
-            .products,
-            .trust,
-            footer {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
-</head>
-<body>
-
-<header>
-    <div class="logo">
-        <img src="logo.png" alt="Skincare With Happy Logo">
-        <span>SkincareWithHappy</span>
-    </div>
-
-    <nav>
-        <a href="shop.html">Shop</a>
-        <a href="learn.html">Learn</a>
-        <a href="about.html">About</a>
-    </nav>
-
-    <a href="#" class="nav-btn">Account</a>
-</header>
+{% extends "layout.html" %}
+{% block title %}Home | Skincare With Happy{% endblock %}
+{% block styles %} <link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}"> {% endblock %}
+{% block content %}
 
 <section class="hero">
     <div>
@@ -295,67 +14,47 @@
     </div>
 </section>
 
-<section class="categories">
-    <div class="category-card">By Skin Type</div>
-    <div class="category-card">By Concern</div>
-    <div class="category-card">Skincare Routines</div>
+<section class="section">
+    <h2>Shop By</h2>
+    <div class="categories">
+        <div class="category-card">By Skin Type</div>
+        <div class="category-card">By Concern</div>
+        <div class="category-card">Skincare Routines</div>
+    </div>
 </section>
 
 <section class="section" id="products">
     <h2>Just In</h2>
     <div class="products">
-        <div class="product-card"><div class="product-img"></div><p>Gentle Cleanser</p></div>
-        <div class="product-card"><div class="product-img"></div><p>Hydrating Serum</p></div>
-        <div class="product-card"><div class="product-img"></div><p>Soothing Moisturizer</p></div>
+        <div class="product-card">
+            <div class="product-img"></div>
+            <p>Gentle Cleanser</p>
+        </div>
+        <div class="product-card">
+            <div class="product-img"></div>
+            <p>Hydrating Serum</p>
+        </div>
+        <div class="product-card">
+            <div class="product-img"></div>
+            <p>Soothing Moisturizer</p>
+        </div>
     </div>
 </section>
 
-<section class="trust">
-    <div><h3>Clinically Guided</h3><p>Evidence-based ingredients.</p></div>
-    <div><h3>Education First</h3><p>We help you understand.</p></div>
-    <div><h3>Secure Payments</h3><p>Safe online checkout.</p></div>
+<section class="section alt">
+    <div class="trust">
+        <div>
+            <h3>Clinically Guided</h3>
+            <p>Evidence-based ingredients.</p>
+        </div>
+        <div>
+            <h3>Education First</h3>
+            <p>We help you understand.</p>
+        </div>
+        <div>
+            <h3>Secure Payments</h3>
+            <p>Safe online checkout.</p>
+        </div>
+    </div>
 </section>
-
-<footer>
-    <div class="footer-logo">
-        <span style="font-weight: light,padding-bottom: 0">SkincareWithHappy</span>
-        <img src="logo.png" alt="Skincare With Happy Logo" style>        
-        <small style="font-style: italic, padding-top: 0">Gentle care. Calm, Clear & Visible glow. Confident skin!</small>
-    </div>
-
-    <div>
-        <a href="shop.html">Shop</a>
-        <a href="learn.html">Learn</a>
-        <a href="about.html">About</a>
-        <a href="contact.html">Contact</a>
-    </div>
-
-    <div>
-        <p>Subscribe for skincare education</p>
-    </div>
-</footer>
-
-<script>
-    // Header shadow on scroll
-    const header = document.querySelector("header");
-    window.addEventListener("scroll", () => {
-        header.classList.toggle("scrolled", window.scrollY > 20);
-    });
-
-    // Smooth scroll CTA
-    document.getElementById("exploreBtn").addEventListener("click", () => {
-        document.getElementById("products").scrollIntoView({ behavior: "smooth" });
-    });
-
-    // Category interaction
-    const categories = document.querySelectorAll(".category-card");
-    categories.forEach(card => {
-        card.addEventListener("click", () => {
-            categories.forEach(c => c.classList.remove("active"));
-            card.classList.add("active");
-        });
-    });
-</script>
-
-</body>
-</html>
+{% endblock %}

@@ -1,0 +1,183 @@
+/* =========================
+   HERO
+========================= */
+.hero {
+    padding: 60px 20px;
+    background: var(--bg-soft);
+    display: grid;
+    gap: 30px;
+}
+
+.hero h1 {
+    font-size: 28px; /* slightly smaller for mobile */
+    color: var(--primary);
+}
+
+.hero p {
+    font-size: 15px;
+}
+
+.hero button {
+    margin-top: 20px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 14px 28px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 15px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hero button:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+}
+
+/* =========================
+   SECTIONS
+========================= */
+.section {
+    padding: 40px 20px; /* lighter padding for mobile */
+    background: #ffffff;
+}
+
+.section.alt {
+    background: var(--bg-soft);
+}
+
+.section h2 {
+    text-align: center;
+    margin-bottom: 25px;
+    color: var(--primary);
+    font-size: 20px;
+}
+
+/* =========================
+   CATEGORIES
+========================= */
+.categories {
+    display: grid;
+    gap: 20px;
+}
+
+.category-card {
+    background: #ffffff;
+    height: 120px; /* smaller for mobile */
+    border-radius: var(--radius);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: 600;
+    box-shadow: var(--shadow-soft);
+    cursor: pointer;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.category-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-hover);
+}
+
+.category-card.active {
+    outline: 3px solid var(--accent);
+}
+
+/* =========================
+   PRODUCTS
+========================= */
+.products {
+    display: grid;
+    gap: 24px;
+}
+
+.product-card {
+    background: #f9fafc;
+    padding: 16px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-soft);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.product-card:hover {
+    transform: translateY(-6px);
+    box-shadow: var(--shadow-hover);
+}
+
+.product-img {
+    background: #ddd;
+    height: 130px;
+    border-radius: 8px;
+    margin-bottom: 14px;
+}
+
+.product-card button {
+    margin-top: 12px;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.25s ease;
+}
+
+.product-card button:hover {
+    background: var(--accent);
+}
+
+/* =========================
+   TRUST / FEATURES
+========================= */
+.trust {
+    display: grid;
+    gap: 24px;
+    text-align: center;
+}
+
+.trust div {
+    background: #ffffff;
+    padding: 24px 20px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-soft);
+}
+
+/* =========================
+   RESPONSIVE BREAKPOINTS
+========================= */
+
+/* Tablet (≥768px) */
+@media (min-width: 768px) {
+    .hero {
+        grid-template-columns: 1fr 1fr;
+        padding: 80px 40px;
+    }
+
+    .categories,
+    .products,
+    .trust {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .section {
+        padding: 60px 40px;
+    }
+}
+
+/* Desktop (≥1024px) */
+@media (min-width: 1024px) {
+    .categories,
+    .products,
+    .trust {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .section {
+        padding: 80px 60px;
+    }
+
+    .hero h1 {
+        font-size: 36px;
+    }
+}

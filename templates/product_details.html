@@ -1,274 +1,358 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Product Details | Skincare With Happy</title>
+    <head>
+        <meta charset="UTF-8">
+        <title>Product Details | Skincare With Happy</title>
 
-<style>
-body {
-    margin: 0;
-    font-family: Arial, Helvetica, sans-serif;
-    background: #f5f7fa;
-    color: #1E3A8A;
-}
+        <style>
+            :root {
+                --primary: #1E3A8A;
+                --accent: #FF8C00;
+                --bg-light: #f5f7fa;
+                --bg-soft: #e9edf5;
+            }
 
-/* NAVBAR */
-header {
-    background: #ffffff;
-    padding: 16px 40px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-}
+            * { box-sizing: border-box; }
 
-header nav a {
-    margin: 0 15px;
-    text-decoration: none;
-    color: #1E3A8A;
-}
+            body {
+                margin: 0;
+                font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+                background-color: var(--bg-light);
+                color: var(--primary);
+                line-height: 1.6;
+            }
 
-.nav-btn {
-    background: #4CAF50;
-    color: #fff;
-    padding: 8px 18px;
-    border-radius: 4px;
-    text-decoration: none;
-}
+            /* NAVBAR */
+            header {
+                background: #ffffff;
+                padding: 16px 40px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                position: sticky;
+                top: 0;
+                z-index: 100;
+                transition: box-shadow 0.3s ease;
+            }
 
-/* PRODUCT HERO */
-.product-hero {
-    padding: 60px 40px;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 40px;
-    background: #ffffff;
-}
+            header.scrolled {
+                box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+            }
 
-.product-image {
-    background: #ddd;
-    height: 360px;
-    border-radius: 6px;
-}
+            .logo {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                font-weight: 600;
+                font-size: 18px;
+            }
 
-.product-info h1 {
-    margin-top: 0;
-}
+            .logo img {
+                height: 42px;
+            }
 
-.price {
-    color: #4CAF50;
-    font-size: 22px;
-    font-weight: bold;
-    margin: 10px 0;
-}
+            nav a {
+                margin: 0 15px;
+                text-decoration: none;
+                color: var(--primary);
+                font-weight: 500;
+                position: relative;
+            }
 
-.short-desc {
-    line-height: 1.6;
-    margin: 20px 0;
-}
+            nav a::after {
+                content: "";
+                position: absolute;
+                width: 0;
+                height: 2px;
+                background: var(--accent);
+                left: 0;
+                bottom: -5px;
+                transition: width 0.3s ease;
+            }
 
-.quantity {
-    margin: 20px 0;
-}
+            nav a:hover::after {
+                width: 100%;
+            }
 
-.quantity input {
-    width: 60px;
-    padding: 6px;
-}
+            .nav-btn {
+                background: #4CAF50;
+                color: #fff;
+                padding: 8px 18px;
+                border-radius: 6px;
+                text-decoration: none;
+            }
+            /* PRODUCT HERO */
+            .product-hero {
+                padding: 60px 40px;
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 40px;
+                background: #ffffff;
+            }
 
-.add-cart {
-    background: #FF8C00;
-    color: #fff;
-    border: none;
-    padding: 12px 26px;
-    border-radius: 4px;
-    font-size: 15px;
-    cursor: pointer;
-}
+            .product-image {
+                background: #ddd;
+                height: 360px;
+                border-radius: 6px;
+            }
 
-/* INFO SECTIONS */
-.details {
-    padding: 60px 40px;
-    background: #f9fafc;
-}
+            .product-info h1 {
+                margin-top: 0;
+            }
 
-.details h2 {
-    margin-bottom: 15px;
-}
+            .price {
+                color: #4CAF50;
+                font-size: 22px;
+                font-weight: bold;
+                margin: 10px 0;
+            }
 
-.details p, .details li {
-    line-height: 1.7;
-}
+            .short-desc {
+                line-height: 1.6;
+                margin: 20px 0;
+            }
 
-/* TRUST BOX */
-.trust-box {
-    background: #e9edf5;
-    padding: 40px;
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 30px;
-}
+            .quantity {
+                margin: 20px 0;
+            }
 
-.trust-box div {
-    background: #ffffff;
-    padding: 20px;
-    border-radius: 6px;
-}
+            .quantity input {
+                width: 60px;
+                padding: 6px;
+            }
 
-/* RECOMMENDED */
-.section {
-    padding: 60px 40px;
-    background: #ffffff;
-}
+            .add-cart {
+                background: #FF8C00;
+                color: #fff;
+                border: none;
+                padding: 12px 26px;
+                border-radius: 4px;
+                font-size: 15px;
+                cursor: pointer;
+            }
 
-.products {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 25px;
-}
+            /* INFO SECTIONS */
+            .details {
+                padding: 60px 40px;
+                background: #f9fafc;
+            }
 
-.product-card {
-    background: #f9fafc;
-    padding: 15px;
-    border-radius: 6px;
-}
+            .details h2 {
+                margin-bottom: 15px;
+            }
 
-.product-img {
-    background: #ddd;
-    height: 140px;
-    border-radius: 4px;
-    margin-bottom: 10px;
-}
+            .details p, .details li {
+                line-height: 1.7;
+            }
 
-/* FOOTER */
-footer {
-    background: #1E3A8A;
-    color: white;
-    padding: 40px;
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-}
-</style>
-</head>
+            /* TRUST BOX */
+            .trust-box {
+                background: #e9edf5;
+                padding: 40px;
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 30px;
+            }
 
-<body>
+            .trust-box div {
+                background: #ffffff;
+                padding: 20px;
+                border-radius: 6px;
+            }
 
-<header>
-    <strong>Skincare With Happy</strong>
-    <nav>
-        <a href="shop.html">Shop</a>
-        <a href="learn.html">Learn</a>
-        <a href="about.html">About</a>
-        <a href="contact.html">Contact</a>
-    </nav>
-    <a href="#" class="nav-btn">Account</a>
-</header>
+            /* RECOMMENDED */
+            .section {
+                padding: 60px 40px;
+                background: #ffffff;
+            }
 
-<!-- PRODUCT HERO -->
-<section class="product-hero">
-    <div class="product-image"></div>
+            .products {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 25px;
+            }
 
-    <div class="product-info">
-        <h1>Niacinamide Balancing Serum</h1>
-        <div class="price">$30</div>
+            .product-card {
+                background: #f9fafc;
+                padding: 15px;
+                border-radius: 6px;
+            }
 
-        <p class="short-desc">
-            A lightweight serum formulated to support oil balance, strengthen the
-            skin barrier, and reduce the appearance of blemishes.
-        </p>
+            .product-img {
+                background: #ddd;
+                height: 140px;
+                border-radius: 4px;
+                margin-bottom: 10px;
+            }
 
-        <div class="quantity">
-            Quantity:
-            <input type="number" value="1" min="1">
-        </div>
+            /* FOOTER */
+            footer {
+                background: var(--primary);
+                color: #fff;
+                padding: 60px 40px;
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 30px;
+            }
 
-        <button class="add-cart">Add to Cart</button>
-    </div>
-</section>
+            .footer-logo {
+                display: flex;
+                flex-direction: column;
+            }
 
-<!-- PRODUCT DETAILS -->
-<section class="details">
-    <h2>Description</h2>
-    <p>
-        This serum is designed for acne-prone and sensitive skin types.
-        It helps improve texture while maintaining hydration and comfort.
-    </p>
+            .footer-logo img {
+                width: 170px;
+                padding-left: 40px
+            }
 
-    <h2>Key Ingredients</h2>
-    <ul>
-        <li>Niacinamide (5%) – Supports barrier function</li>
-        <li>Zinc PCA – Helps control oil</li>
-        <li>Panthenol – Soothes irritation</li>
-    </ul>
+            .footer-logo span {
+                font-size: 28px;
+                font-weight: light;
+                font-style: italic;
+            }
 
-    <h2>How to Use</h2>
-    <p>
-        Apply 2–3 drops to clean skin after cleansing.
-        Use morning and evening before moisturizer.
-    </p>
+            .footer-logo small{
+                font-size: 8px;
+                padding-left: 10px;
+            }
 
-    <h2>Clinical & Safety Notes</h2>
-    <p>
-        Dermatologically tested. Suitable for sensitive skin.
-        Always patch test before first use.
-    </p>
-</section>
+            footer a {
+                color: #ffffff;
+                text-decoration: none;
+                display: block;
+                margin-bottom: 8px;
+                opacity: 0.85;
+            }
 
-<!-- TRUST SECTION -->
-<section class="trust-box">
-    <div>
-        <h3>Who It’s For</h3>
-        <p>Oily, acne-prone, and combination skin.</p>
-    </div>
+            footer a:hover {
+                opacity: 1;
+            }
+        </style>
+    </head>
 
-    <div>
-        <h3>Who Should Avoid</h3>
-        <p>Those with known niacinamide sensitivity.</p>
-    </div>
+    <body>
 
-    <div>
-        <h3>Routine Placement</h3>
-        <p>Cleanser → Serum → Moisturizer</p>
-    </div>
-</section>
+        <header>
+            <div class="logo">
+                <img src="/static/img/logo.png" alt="Skincare With Happy Logo">
+                <span>SkincareWithHappy</span>
+            </div>
 
-<!-- RECOMMENDED -->
-<section class="section">
-    <h2>Recommended Products</h2>
+            <nav>
+                <a href="shop.html">Shop</a>
+                <a href="learn.html">Learn</a>
+                <a href="about.html">About</a>
+                <a href="contact.html">Contact</a>
+            </nav>
+            <a href="#" class="nav-btn">Account</a>
+        </header>
 
-    <div class="products">
-        <div class="product-card">
-            <div class="product-img"></div>
-            <h4>Gentle Cleanser</h4>
-            <p class="price">$18</p>
-        </div>
+        <!-- PRODUCT HERO -->
+        <section class="product-hero">
+            <div class="product-image"></div>
 
-        <div class="product-card">
-            <div class="product-img"></div>
-            <h4>Barrier Repair Cream</h4>
-            <p class="price">$25</p>
-        </div>
+            <div class="product-info">
+                <h1>Niacinamide Balancing Serum</h1>
+                <div class="price">$30</div>
 
-        <div class="product-card">
-            <div class="product-img"></div>
-            <h4>SPF 50 Mineral Sunscreen</h4>
-            <p class="price">$20</p>
-        </div>
-    </div>
-</section>
+                <p class="short-desc">
+                    A lightweight serum formulated to support oil balance, strengthen the
+                    skin barrier, and reduce the appearance of blemishes.
+                </p>
 
-<footer>
-    <div>
-        <strong>Skincare With Happy</strong>
-        <p>Education-first skincare you can trust.</p>
-    </div>
-    <div>
-        <p>Shop · Learn · About</p>
-    </div>
-    <div>
-        <p>Secure online payment before delivery</p>
-    </div>
-</footer>
+                <div class="quantity">
+                    Quantity:
+                    <input type="number" value="1" min="1">
+                </div>
 
-</body>
+                <button class="add-cart">Add to Cart</button>
+            </div>
+        </section>
+
+        <!-- PRODUCT DETAILS -->
+        <section class="details">
+            <h2>Description</h2>
+            <p>
+                This serum is designed for acne-prone and sensitive skin types.
+                It helps improve texture while maintaining hydration and comfort.
+            </p>
+
+            <h2>Key Ingredients</h2>
+            <ul>
+                <li>Niacinamide (5%) – Supports barrier function</li>
+                <li>Zinc PCA – Helps control oil</li>
+                <li>Panthenol – Soothes irritation</li>
+            </ul>
+
+            <h2>How to Use</h2>
+            <p>
+                Apply 2–3 drops to clean skin after cleansing.
+                Use morning and evening before moisturizer.
+            </p>
+
+            <h2>Clinical & Safety Notes</h2>
+            <p>
+                Dermatologically tested. Suitable for sensitive skin.
+                Always patch test before first use.
+            </p>
+        </section>
+
+        <!-- TRUST SECTION -->
+        <section class="trust-box">
+            <div>
+                <h3>Who It’s For</h3>
+                <p>Oily, acne-prone, and combination skin.</p>
+            </div>
+
+            <div>
+                <h3>Who Should Avoid</h3>
+                <p>Those with known niacinamide sensitivity.</p>
+            </div>
+
+            <div>
+                <h3>Routine Placement</h3>
+                <p>Cleanser → Serum → Moisturizer</p>
+            </div>
+        </section>
+
+        <!-- RECOMMENDED -->
+        <section class="section">
+            <h2>Recommended Products</h2>
+
+            <div class="products">
+                <div class="product-card">
+                    <div class="product-img"></div>
+                    <h4>Gentle Cleanser</h4>
+                    <p class="price">$18</p>
+                </div>
+
+                <div class="product-card">
+                    <div class="product-img"></div>
+                    <h4>Barrier Repair Cream</h4>
+                    <p class="price">$25</p>
+                </div>
+
+                <div class="product-card">
+                    <div class="product-img"></div>
+                    <h4>SPF 50 Mineral Sunscreen</h4>
+                    <p class="price">$20</p>
+                </div>
+            </div>
+        </section>
+
+        <footer>
+            <div class="footer-logo">
+                <span style="font-weight: light,padding-bottom: 0">SkincareWithHappy</span>
+                <img src="/static/img/logo.png" alt="Skincare With Happy Logo" style>        
+                <small style="font-style: italic, padding-top: 0">Gentle care. Calm, Clear & Visible glow. Confident skin!</small>
+            </div>
+            <div>
+                <p>Shop · Learn · About</p>
+            </div>
+            <div>
+                <p>Secure online payment before delivery</p>
+            </div>
+        </footer>
+
+    </body>
 </html>
