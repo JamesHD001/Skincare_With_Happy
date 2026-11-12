@@ -27,24 +27,28 @@
 <section class="shop-section">
     <h2>Shop Our Bestsellers</h2>
     <div class="products">
-        <div class="product-card">
-            <div class="product-img"></div>
-            <p><strong>Gentle Cleanser for Sensitive Skin</strong></p>
-            <p>A soothing cleanser for delicate, sensitive skin.</p>
-            <button>View Details</button>
-        </div>
-        <div class="product-card">
-            <div class="product-img"></div>
-            <p><strong>Hydrating Serum with Ceramides</strong></p>
-            <p>Deeply hydrating serum to restore moisture balance.</p>
-            <button>View Details</button>
-        </div>
-        <div class="product-card">
-            <div class="product-img"></div>
-            <p><strong>Soothing Moisturizer</strong></p>
-            <p>Light yet effective, perfect for all-day hydration.</p>
-            <button>View Details</button>
-        </div>
+        {% for product in products %}
+            <article class="product-card">
+                <a href="{{ url_for('product_detail', product_id=product.id) }}">
+                    <div class="product-img" aria-hidden="true"></div>
+                    <p><strong>{{ product.name }}</strong></p>
+                </a>
+                <p>{{ product.description or "Thoughtful care for your skincare routine." }}</p>
+                <p>{{ product.price|naira }}</p>
+                {% if product.stock > 0 %}
+                    <form method="post" action="{{ url_for('add_to_cart') }}">
+                        <input type="hidden" name="csrf_token" value="{{ customer_csrf_token }}">
+                        <input type="hidden" name="product_id" value="{{ product.id }}">
+                        <input type="hidden" name="quantity" value="1">
+                        <button type="submit">Add to basket</button>
+                    </form>
+                {% else %}
+                    <p>Out of stock</p>
+                {% endif %}
+            </article>
+        {% else %}
+            <p>No products are available yet.</p>
+        {% endfor %}
     </div>
 </section>
 

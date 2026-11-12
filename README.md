@@ -11,6 +11,7 @@ SkinCareWithHappy is a Flask-based skincare storefront project. It provides a we
 - **Database:** Flask-SQLAlchemy with Alembic migrations; Neon PostgreSQL is supported
 - **Payments:** Manual transfer/OPay submission with receipt and reference review by an administrator
 - **Customer accounts:** CSRF-protected sign-up/sign-in, guest checkout, and signed-in order history
+- **Receipt storage:** Private S3-compatible storage; receipts are not served from the public static directory
 - **Configuration:** `python-dotenv` and environment variables
 - **PostgreSQL target:** Neon PostgreSQL
 
@@ -122,8 +123,18 @@ Set the values in the project-root `.env` locally; `.env.example` is a template 
 - `DATABASE_URL`: Neon pooled PostgreSQL connection; when unset, the app uses the configured local SQLite path.
 - `DIRECT_DATABASE_URL`: direct database connection used by migrations and administrative tasks.
 - `PAYSTACK_PUBLIC_KEY` and `PAYSTACK_SECRET_KEY`: optional payment-provider configuration.
+- `RECEIPT_STORAGE_BUCKET`, `RECEIPT_STORAGE_REGION`, `RECEIPT_STORAGE_ACCESS_KEY_ID`, and `RECEIPT_STORAGE_SECRET_ACCESS_KEY`: required for manual checkout receipt uploads. `RECEIPT_STORAGE_ENDPOINT_URL` is optional for S3-compatible providers. Configure the bucket to block public access; uploads use server-side AES256 encryption. Checkout fails safely when private storage is not configured.
 
-Run `flask --app app.app db upgrade` after configuring the target database and before deploying code that depends on a new schema. The application creates missing tables for local development, but production schema changes should be applied through migrations.
+The application does not create database tables or seed products during web requests. Apply migrations explicitly, then seed the catalog:
+
+```powershell
+$env:DATABASE_URL = "sqlite:///database.db"
+$env:DIRECT_DATABASE_URL = ""
+flask --app app.app db upgrade
+flask --app app.app seed-products
+```
+
+Set `DATABASE_URL` to the intended database before running these commands. Do not point local tests or exploratory commands at a production database.
 
 ### 7. Run the application
 
@@ -157,6 +168,8 @@ Set these environment variables in the Vercel project settings before deployment
 
 The repository includes a `vercel.json` config to route requests to the Flask app exported from `api/index.py`.
 
+Configure the private receipt-storage variables above in Vercel before enabling manual checkout. The app has no public or local-disk receipt-storage fallback. This work does not run a Vercel deployment.
+
 ### Admin console
 
 Configure `ADMIN_USERNAME` and `ADMIN_PASSWORD` for the first sign-in to `/admin/login`. Admin dashboard, order/payment review, product management, customer views, and profile settings require an authenticated session. Profile details are stored in the database; the username remains environment-managed. A password changed from Settings is stored as a password hash and becomes the login authority.
@@ -181,24 +194,29 @@ This exports the current PostgreSQL schema and data to a timestamped SQL file in
 
 ## Database migration status
 
-The application uses SQLAlchemy models and Alembic migrations for products, orders, payment audit logs, admin profiles, and customer accounts. Configure `DATABASE_URL` for Neon PostgreSQL or use the SQLite fallback locally. Apply pending migrations with `flask --app app.app db upgrade`; verify connection values and migration results before a production deployment.
+The application uses SQLAlchemy models and Alembic migrations for products, orders, payment audit logs, admin profiles, customer accounts, fixed-precision money, and inventory reservations. Apply pending migrations with `flask --app app.app db upgrade` against the intended database; verify the database target and migration results before a production deployment.
+
+The checkout-hardening migration converts legacy floating-point money values to `Numeric(14, 2)`. Before changing schema, it checks product prices, order totals, and order-item prices. It stops with a row-specific message if it finds non-finite values, values with more than two decimal places, or values outside the supported range; reconcile those rows manually and rerun. Do not bypass this check by rounding production data automatically.
 
 For a legacy database already populated by `db.create_all()` but missing `alembic_version`, first verify that its tables match the initial migration, then run `flask --app app.app db stamp 20261112_initial` once and `flask --app app.app db upgrade`. Do not stamp a fresh or structurally different database.
 
 ## Payments and security
 
-Payment processing is not production-ready. Before accepting real payments, the project must:
+Manual payment review currently uses the server-side cart and catalog prices, bounded quantities, a database stock reservation transaction, a unique payment reference, and private receipt storage. Admin receipt downloads require an authenticated admin session. Rejected orders release only inventory reserved by this checkout flow.
 
-- Calculate order totals on the server using trusted product prices.
-- Validate cart items and quantities on the server.
-- Initialize payment transactions securely on the server.
-- Verify payment status with the payment provider before marking an order as paid.
-- Validate payment references and prevent duplicate or forged order submissions.
-- Protect administrative routes with authentication and authorization.
-- Keep payment status separate from order fulfillment status.
-- Validate and safely store any payment evidence if manual transfer payments are introduced.
+The Paystack helper is not wired into checkout, so card/online payment initialization and provider verification are not implemented. Email verification and password recovery are also outstanding. Keep both limitations in mind before using customer accounts or payment workflows for higher-risk production use.
 
 Never store secret keys in the repository. Use environment variables and the hosting provider's secret-management settings.
+
+## Tests
+
+Run the local SQLite-backed suite after installing `requirements.txt`:
+
+```powershell
+python -m unittest discover -s tests
+```
+
+The PostgreSQL migration test is opt-in. Set `TEST_DATABASE_URL` to a **fresh, disposable** PostgreSQL database whose name ends in `_test`, then run the same suite. It verifies the database has no tables before applying migrations and never drops or resets the database. Do not use a production URL. No PostgreSQL test is run unless this variable is explicitly provided.
 
 ## Project roadmap
 

@@ -7,8 +7,8 @@ os.environ["ADMIN_USERNAME"] = "test-admin"
 os.environ["ADMIN_PASSWORD"] = "test-admin-password"
 os.environ["SECRET_KEY"] = "test-session-secret"
 
-from app.app import create_app
-from app.models import AdminProfile, Order, PaymentAuditLog, Product, db
+from app.app import create_app, seed_products
+from app.models import AdminProfile, Order, OrderItem, PaymentAuditLog, Product, db
 from werkzeug.security import check_password_hash
 
 
@@ -16,6 +16,9 @@ class AdminConsoleTests(unittest.TestCase):
     def setUp(self):
         self.app = create_app()
         self.app.config.update(TESTING=True, SQLALCHEMY_DATABASE_URI="sqlite:///:memory:")
+        with self.app.app_context():
+            db.create_all()
+            seed_products()
         self.client = self.app.test_client()
         self.client.get("/admin/login")
 
@@ -179,17 +182,23 @@ class AdminConsoleTests(unittest.TestCase):
     def test_payment_review_records_admin_and_customer_summary(self):
         self.sign_in()
         with self.app.app_context():
+            product = Product.query.first()
+            starting_stock = product.stock
+            product_id = product.id
+            product.stock -= 2
             order = Order(
                 customer_name="Amina Buyer",
                 user_email="amina@example.test",
                 phone_number="08000000000",
                 total_amount=12500,
+                inventory_deducted=True,
                 payment_method="manual_transfer",
                 payment_status="awaiting_verification",
                 fulfillment_status="pending",
                 payment_reference="TEST-ORDER-1",
-                receipt_file="/static/uploads/payments/test-receipt.png",
+                receipt_file="receipts/0123456789abcdef0123456789abcdef.png",
             )
+            order.items.append(OrderItem(product_id=product.id, quantity=2, unit_price=product.price))
             db.session.add(order)
             db.session.commit()
             order_id = order.id
@@ -206,18 +215,44 @@ class AdminConsoleTests(unittest.TestCase):
         with self.app.app_context():
             order = db.session.get(Order, order_id)
             self.assertEqual(order.payment_status, "paid")
+            self.assertTrue(order.inventory_deducted)
             audit = PaymentAuditLog.query.filter_by(order_id=order_id).one()
             self.assertEqual(audit.event, "payment_approved")
             self.assertEqual(audit.actor, "test-admin")
 
         response = self.client.get("/admin/orders")
-        self.assertIn(b"View receipt", response.data)
+        self.assertIn(b"Download receipt", response.data)
+
+        with self.app.app_context():
+            product = Product.query.first()
+            product.stock -= 1
+            rejected_order = Order(
+                customer_name="Rejected Buyer",
+                user_email="rejected@example.test",
+                total_amount=product.price,
+                inventory_deducted=True,
+                payment_method="manual_transfer",
+                payment_status="awaiting_verification",
+                fulfillment_status="pending",
+                payment_reference="TEST-ORDER-2",
+            )
+            rejected_order.items.append(
+                OrderItem(product_id=product.id, quantity=1, unit_price=product.price)
+            )
+            db.session.add(rejected_order)
+            db.session.commit()
+            rejected_order_id = rejected_order.id
 
         response = self.client.post(
-            f"/admin/orders/{order_id}/verify",
+            f"/admin/orders/{rejected_order_id}/verify",
             data={"csrf_token": self.csrf_token(), "decision": "reject"},
         )
         self.assertEqual(response.status_code, 302)
+        with self.app.app_context():
+            order = db.session.get(Order, rejected_order_id)
+            self.assertEqual(order.payment_status, "rejected")
+            self.assertFalse(order.inventory_deducted)
+            self.assertEqual(db.session.get(Product, product_id).stock, starting_stock - 2)
 
         response = self.client.get("/admin/customers")
         self.assertEqual(response.status_code, 200)

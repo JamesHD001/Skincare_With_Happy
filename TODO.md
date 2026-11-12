@@ -22,6 +22,16 @@
 - [x] Require receipt upload and transaction reference.
 - [x] Add admin-side payment verification and audit history.
 - [x] Keep payment status separate from order status.
+- [x] Validate receipt file type/content and store receipts in private S3-compatible storage.
+- [x] Require authenticated admin access to download receipts; block legacy public receipt URLs.
+- [x] Calculate checkout totals with Decimal and reserve stock in the order transaction.
+- [x] Restore reserved stock when an admin rejects a payment.
+- [x] Add a fixed-precision money and inventory-reservation migration with a data preflight.
+- [x] Remove request-time schema creation/seeding and add an explicit idempotent product-seed command.
+- [x] Add focused SQLite tests and an opt-in fresh PostgreSQL migration test.
+- [ ] Configure a private, public-access-blocked receipt bucket in each deployment environment.
+- [ ] Apply the checkout-hardening migration to each intended database after reviewing the preflight results.
+- [ ] Define a timeout policy for payment-verification orders that are never reviewed, so reserved stock is eventually released.
 - [ ] Revisit OPay merchant API integration after merchant onboarding.
 
 ## Admin console

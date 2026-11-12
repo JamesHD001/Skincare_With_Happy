@@ -36,15 +36,23 @@
                 <label for="reference">Transaction reference</label>
                 <input id="reference" name="reference" type="text" maxlength="120" required>
                 <label for="receipt">Payment receipt</label>
-                <input id="receipt" name="receipt" type="file" accept="image/*,.pdf" required>
-                <button class="account-submit checkout-submit" type="submit">Submit order for verification</button>
+                <input id="receipt" name="receipt" type="file"
+                       accept="image/png,image/jpeg,image/webp,application/pdf" required>
+                {% if cart_summary["available"] %}
+                    <button class="account-submit checkout-submit" type="submit">Submit order for verification</button>
+                {% else %}
+                    <p class="cart-unavailable">Update your basket to resolve stock availability before checkout.</p>
+                    <a class="checkout-back-link" href="{{ url_for('cart') }}">Return to basket</a>
+                {% endif %}
             </section>
 
             <aside class="checkout-panel checkout-summary">
                 <h2>Order summary</h2>
                 {% for item in cart_summary["items"] %}
                     <div class="checkout-item">
-                        <span>{{ item.name }} × {{ item.quantity }}</span>
+                        <span>{{ item.name }} × {{ item.quantity }}
+                            {% if not item.available %}<small class="cart-unavailable">Unavailable ({{ item.stock }} in stock)</small>{% endif %}
+                        </span>
                         <strong>{{ item.line_total|naira }}</strong>
                     </div>
                 {% endfor %}

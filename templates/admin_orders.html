@@ -50,8 +50,8 @@
                             <td>
                                 <span class="status-pill status-{{ order.payment_status|replace('_', '-') }}">{{ order.payment_status|replace('_', ' ')|title }}</span>
                                 <small>{{ order.payment_reference or "No reference" }}</small>
-                                {% if order.receipt_file and order.receipt_file.startswith("/static/uploads/payments/") %}
-                                    <a class="table-link" href="{{ order.receipt_file }}" target="_blank" rel="noopener noreferrer">View receipt</a>
+                                {% if order.receipt_file and order.receipt_file.startswith("receipts/") %}
+                                    <a class="table-link" href="{{ url_for('admin_order_receipt', order_id=order.id) }}">Download receipt</a>
                                 {% endif %}
                             </td>
                             <td>{{ order.fulfillment_status|replace("_", " ")|title }}</td>

@@ -3,18 +3,34 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
-import math
-import os
 import re
 import secrets
 from datetime import datetime
+from decimal import Decimal, InvalidOperation
 from functools import wraps
+from io import BytesIO
 from pathlib import Path
 
-from flask import Flask, abort, flash, jsonify, redirect, render_template, request, session, url_for
+import click
+from flask import (
+    Flask,
+    abort,
+    flash,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    send_file,
+    session,
+    url_for,
+)
 from flask_migrate import Migrate
-from sqlalchemy import func
-from sqlalchemy.exc import IntegrityError
+from PIL import Image, UnidentifiedImageError
+from pypdf import PdfReader
+from pypdf.errors import PdfReadError
+from sqlalchemy import func, update
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from werkzeug.exceptions import RequestEntityTooLarge
 from werkzeug.security import check_password_hash, generate_password_hash
 
 try:
@@ -24,11 +40,22 @@ try:
         APP_ENV,
         DATABASE_URL,
         DIRECT_DATABASE_URL,
+        MAX_RECEIPT_SIZE_BYTES,
         PAYSTACK_PUBLIC_KEY,
+        RECEIPT_STORAGE_ACCESS_KEY_ID,
+        RECEIPT_STORAGE_BUCKET,
+        RECEIPT_STORAGE_ENDPOINT_URL,
+        RECEIPT_STORAGE_REGION,
+        RECEIPT_STORAGE_SECRET_ACCESS_KEY,
         SECRET_KEY,
         SQLALCHEMY_DATABASE_URI,
     )
     from app.models import AdminProfile, Customer, Order, OrderItem, PaymentAuditLog, Product, db
+    from app.receipt_storage import (
+        ReceiptNotFound,
+        ReceiptStorageError,
+        create_receipt_storage,
+    )
 except ImportError:  # pragma: no cover - compatibility for direct script execution
     from config import (
         ADMIN_PASSWORD,
@@ -36,28 +63,44 @@ except ImportError:  # pragma: no cover - compatibility for direct script execut
         APP_ENV,
         DATABASE_URL,
         DIRECT_DATABASE_URL,
+        MAX_RECEIPT_SIZE_BYTES,
         PAYSTACK_PUBLIC_KEY,
+        RECEIPT_STORAGE_ACCESS_KEY_ID,
+        RECEIPT_STORAGE_BUCKET,
+        RECEIPT_STORAGE_ENDPOINT_URL,
+        RECEIPT_STORAGE_REGION,
+        RECEIPT_STORAGE_SECRET_ACCESS_KEY,
         SECRET_KEY,
         SQLALCHEMY_DATABASE_URI,
     )
     from models import AdminProfile, Customer, Order, OrderItem, PaymentAuditLog, Product, db
+    from receipt_storage import (
+        ReceiptNotFound,
+        ReceiptStorageError,
+        create_receipt_storage,
+    )
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-UPLOAD_DIR = BASE_DIR / "static" / "uploads" / "payments"
-UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+MAX_CART_LINES = 20
+MAX_ITEM_QUANTITY = 20
+ALLOWED_PAYMENT_METHODS = {"manual_transfer", "bank_transfer", "opay"}
+RECEIPT_FORMATS = {
+    ".png": ("png", "image/png"),
+    ".jpg": ("jpeg", "image/jpeg"),
+    ".jpeg": ("jpeg", "image/jpeg"),
+    ".webp": ("webp", "image/webp"),
+    ".pdf": ("pdf", "application/pdf"),
+}
 
 
 def seed_products():
-    if Product.query.first():
-        return
-
     products = [
         {
             "name": "Niacinamide Balancing Serum",
             "slug": "niacinamide-balancing-serum",
             "skin_type": "oily",
-            "price": 30.00,
+            "price": Decimal("30.00"),
             "description": "Lightweight serum for oily and combination skin.",
             "stock": 25,
         },
@@ -65,7 +108,7 @@ def seed_products():
             "name": "Gentle Cream Cleanser",
             "slug": "gentle-cream-cleanser",
             "skin_type": "dry",
-            "price": 18.00,
+            "price": Decimal("18.00"),
             "description": "Comforting cleanser for normal to dry skin.",
             "stock": 30,
         },
@@ -73,7 +116,7 @@ def seed_products():
             "name": "Vitamin C Glow Essence",
             "slug": "vitamin-c-glow-essence",
             "skin_type": "all",
-            "price": 28.00,
+            "price": Decimal("28.00"),
             "description": "Brightening treatment to support an even-looking glow.",
             "stock": 20,
         },
@@ -81,52 +124,169 @@ def seed_products():
             "name": "Hydrating Barrier Cream",
             "slug": "hydrating-barrier-cream",
             "skin_type": "dry",
-            "price": 34.00,
+            "price": Decimal("34.00"),
             "description": "Deep hydration to reinforce the skin barrier.",
             "stock": 18,
         },
     ]
 
+    added = 0
     for payload in products:
-        db.session.add(Product(**payload))
+        if Product.query.filter_by(slug=payload["slug"]).first() is None:
+            db.session.add(Product(**payload))
+            added += 1
 
     db.session.commit()
+    return added
+
+
+class CartValidationError(ValueError):
+    pass
+
+
+class CheckoutError(ValueError):
+    def __init__(self, message, status_code=400):
+        super().__init__(message)
+        self.status_code = status_code
+
+
+def parse_cart(cart):
+    if isinstance(cart, str):
+        try:
+            cart = json.loads(cart)
+        except (TypeError, ValueError) as error:
+            raise CartValidationError("Your cart is invalid. Review it and try again.") from error
+    if not isinstance(cart, list) or not cart:
+        raise CartValidationError("Your cart is empty.")
+    if len(cart) > MAX_CART_LINES:
+        raise CartValidationError(f"A cart can contain at most {MAX_CART_LINES} products.")
+
+    quantities = {}
+    for entry in cart:
+        if not isinstance(entry, dict):
+            raise CartValidationError("Your cart contains an invalid product.")
+        product_id = entry.get("product_id")
+        quantity = entry.get("quantity")
+        if isinstance(product_id, bool) or not (
+            isinstance(product_id, int)
+            or isinstance(product_id, str) and product_id.isdecimal()
+        ):
+            raise CartValidationError("Your cart contains an invalid product.")
+        if isinstance(quantity, bool) or not (
+            isinstance(quantity, int)
+            or isinstance(quantity, str) and quantity.isdecimal()
+        ):
+            raise CartValidationError("Product quantities must be whole numbers.")
+        product_id = int(product_id)
+        quantity = int(quantity)
+        if product_id < 1:
+            raise CartValidationError("Your cart contains an invalid product.")
+        if quantity < 1 or quantity > MAX_ITEM_QUANTITY:
+            raise CartValidationError(
+                f"Each product quantity must be between 1 and {MAX_ITEM_QUANTITY}."
+            )
+        quantities[product_id] = quantities.get(product_id, 0) + quantity
+        if quantities[product_id] > MAX_ITEM_QUANTITY:
+            raise CartValidationError(
+                f"Each product quantity must be between 1 and {MAX_ITEM_QUANTITY}."
+            )
+    return [
+        {"product_id": product_id, "quantity": quantity}
+        for product_id, quantity in sorted(quantities.items())
+    ]
 
 
 def build_cart_summary(cart):
     items = []
-    subtotal = 0.0
+    subtotal = Decimal("0.00")
+    try:
+        parsed_cart = parse_cart(cart)
+    except CartValidationError as error:
+        return {
+            "items": [],
+            "subtotal": subtotal,
+            "total": subtotal,
+            "error": str(error),
+            "available": False,
+        }
 
-    for entry in cart:
-        product = Product.query.get(entry.get("product_id"))
-        if product is None:
-            continue
+    product_ids = [entry["product_id"] for entry in parsed_cart]
+    products = {
+        product.id: product
+        for product in Product.query.filter(Product.id.in_(product_ids)).all()
+    }
 
-        quantity = max(1, int(entry.get("quantity", 1)))
-        line_total = float(product.price) * quantity
-        subtotal += line_total
+    for entry in parsed_cart:
+        product_id = entry["product_id"]
+        quantity = entry["quantity"]
+        product = products.get(product_id)
+        available = product is not None and product.stock >= quantity and product.stock > 0
+        price = product.price if product is not None else Decimal("0.00")
+        line_total = price * quantity
+        if product is not None:
+            subtotal += line_total
         items.append(
             {
-                "product_id": product.id,
-                "name": product.name,
-                "price": float(product.price),
+                "product_id": product_id,
+                "name": product.name if product is not None else "Unavailable product",
+                "price": price,
                 "quantity": quantity,
                 "line_total": line_total,
+                "stock": product.stock if product is not None else 0,
+                "available": available,
             }
         )
 
-    return {"items": items, "subtotal": round(subtotal, 2), "total": round(subtotal, 2)}
+    return {
+        "items": items,
+        "subtotal": subtotal,
+        "total": subtotal,
+        "available": all(item["available"] for item in items),
+        "error": None,
+    }
 
 
-def save_receipt_file(file_storage):
-    if file_storage is None or not getattr(file_storage, "filename", None):
-        return None
+def validate_receipt_upload(file_storage, max_bytes):
+    if file_storage is None or not file_storage.filename:
+        raise CheckoutError("Upload a payment receipt.")
+    filename = file_storage.filename
+    if "/" in filename or "\\" in filename or Path(filename).name != filename:
+        raise CheckoutError("The receipt filename is invalid.")
 
-    filename = f"{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{file_storage.filename}"
-    safe_name = os.path.basename(filename)
-    saved_path = UPLOAD_DIR / safe_name
-    file_storage.save(saved_path)
-    return f"/static/uploads/payments/{safe_name}"
+    suffix = Path(filename).suffix.lower()
+    receipt_format = RECEIPT_FORMATS.get(suffix)
+    if receipt_format is None:
+        raise CheckoutError("Upload a PNG, JPEG, WebP image, or PDF receipt.")
+
+    data = file_storage.stream.read(max_bytes + 1)
+    if not data:
+        raise CheckoutError("The uploaded receipt is empty.")
+    if len(data) > max_bytes:
+        raise CheckoutError("Receipt files must be 5 MB or smaller.")
+
+    expected_format, content_type = receipt_format
+    if expected_format == "pdf":
+        try:
+            reader = PdfReader(BytesIO(data), strict=True)
+            if reader.is_encrypted or not reader.pages or len(reader.pages) > 100:
+                raise CheckoutError("Upload a readable, unencrypted PDF with no more than 100 pages.")
+        except (PdfReadError, ValueError, OSError) as error:
+            raise CheckoutError("The uploaded PDF is invalid or unreadable.") from error
+        extension = "pdf"
+    else:
+        try:
+            with Image.open(BytesIO(data)) as image:
+                actual_format = (image.format or "").lower()
+                if actual_format != expected_format:
+                    raise CheckoutError("The receipt extension does not match its image format.")
+                if image.width * image.height > 20_000_000:
+                    raise CheckoutError("The receipt image dimensions are too large.")
+                image.verify()
+        except (UnidentifiedImageError, OSError, Image.DecompressionBombError) as error:
+            raise CheckoutError("The uploaded image is invalid or unreadable.") from error
+        extension = "jpg" if expected_format == "jpeg" else expected_format
+
+    return data, extension, content_type
 
 
 def make_product_slug(name, product_id=None):
@@ -155,13 +315,17 @@ def parse_product_form(form):
         return None, "Choose a valid skin type."
 
     try:
-        price = float(form.get("price", ""))
+        price = Decimal(form.get("price", "").strip())
         stock = int(form.get("stock", ""))
-    except (TypeError, ValueError):
+    except (InvalidOperation, TypeError, ValueError):
         return None, "Enter a valid price and whole-number stock quantity."
 
-    if not math.isfinite(price) or price <= 0:
+    if not price.is_finite() or price <= 0:
         return None, "Price must be a positive number."
+    if price >= Decimal("1000000000000"):
+        return None, "Price exceeds the supported NGN amount."
+    if price != price.quantize(Decimal("0.01")):
+        return None, "Price must use no more than two decimal places."
     if stock < 0:
         return None, "Stock cannot be negative."
 
@@ -187,6 +351,13 @@ def create_app():
     app.config["SESSION_COOKIE_HTTPONLY"] = True
     app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
     app.config["SESSION_COOKIE_SECURE"] = APP_ENV == "production"
+    app.config["MAX_CONTENT_LENGTH"] = MAX_RECEIPT_SIZE_BYTES + 64 * 1024
+    app.config["RECEIPT_STORAGE_BUCKET"] = RECEIPT_STORAGE_BUCKET
+    app.config["RECEIPT_STORAGE_REGION"] = RECEIPT_STORAGE_REGION
+    app.config["RECEIPT_STORAGE_ENDPOINT_URL"] = RECEIPT_STORAGE_ENDPOINT_URL
+    app.config["RECEIPT_STORAGE_ACCESS_KEY_ID"] = RECEIPT_STORAGE_ACCESS_KEY_ID
+    app.config["RECEIPT_STORAGE_SECRET_ACCESS_KEY"] = RECEIPT_STORAGE_SECRET_ACCESS_KEY
+    app.extensions["receipt_storage"] = create_receipt_storage(app.config)
 
     db.init_app(app)
     Migrate(app, db)
@@ -282,7 +453,11 @@ def create_app():
             csrf_token = secrets.token_urlsafe(32)
             session["admin_csrf_token"] = csrf_token
         customer_csrf_token = session.get("customer_csrf_token", "")
-        if request.path in {"/signup", "/signin", "/account", "/checkout"} and not customer_csrf_token:
+        if (
+            request.path in {"/signup", "/signin", "/account", "/checkout", "/cart", "/shop", "/products"}
+            or request.path.startswith("/product/")
+            or request.path.startswith("/cart/")
+        ) and not customer_csrf_token:
             customer_csrf_token = secrets.token_urlsafe(32)
             session["customer_csrf_token"] = customer_csrf_token
         admin_profile = get_admin_profile() if session.get("admin_authenticated") is True else None
@@ -295,7 +470,8 @@ def create_app():
 
     @app.template_filter("naira")
     def format_naira(amount):
-        return f"₦{float(amount or 0):,.2f}"
+        value = Decimal(str(amount or "0")).quantize(Decimal("0.01"))
+        return f"₦{value:,.2f}"
 
     @app.before_request
     def validate_admin_csrf():
@@ -306,7 +482,10 @@ def create_app():
                 expected_token, submitted_token
             ):
                 abort(400, description="The form expired or its security token is invalid. Reload and try again.")
-        elif request.method == "POST" and request.path in {"/signup", "/signin", "/signout", "/checkout"}:
+        elif request.method == "POST" and (
+            request.path in {"/signup", "/signin", "/signout", "/checkout"}
+            or request.path.startswith("/cart/")
+        ):
             expected_token = session.get("customer_csrf_token", "")
             json_payload = request.get_json(silent=True) if request.is_json else None
             json_token = json_payload.get("csrf_token", "") if isinstance(json_payload, dict) else ""
@@ -321,10 +500,25 @@ def create_app():
                 abort(400, description="The form expired or its security token is invalid. Reload and try again.")
 
     @app.before_request
-    def ensure_seed_data():
-        with app.app_context():
-            db.create_all()
-            seed_products()
+    def hide_legacy_public_receipts():
+        if request.path.startswith("/static/uploads/payments/"):
+            abort(404)
+
+    @app.errorhandler(RequestEntityTooLarge)
+    def handle_large_upload(error):
+        if request.path == "/checkout":
+            return jsonify({"status": "error", "message": "Receipt files must be 5 MB or smaller."}), 413
+        return error
+
+    @app.cli.command("seed-products")
+    def seed_products_command():
+        try:
+            added = seed_products()
+        except SQLAlchemyError:
+            db.session.rollback()
+            app.logger.exception("Product seeding failed.")
+            raise
+        click.echo(f"Seeded {added} product(s).")
 
     @app.route("/")
     def index():
@@ -332,7 +526,7 @@ def create_app():
 
     @app.route("/shop")
     def shop():
-        return render_template("shop.html")
+        return render_template("shop.html", products=Product.query.order_by(Product.id).all())
 
     @app.route("/about")
     def about():
@@ -453,51 +647,81 @@ def create_app():
 
     @app.route("/cart")
     def cart():
+        cart_summary = build_cart_summary(session.get("cart", []))
         return render_template(
             "cart.html",
-            cart=session.get("cart", []),
+            cart_summary=cart_summary,
             PAYSTACK_PUBLIC_KEY=PAYSTACK_PUBLIC_KEY,
         )
 
     @app.route("/cart/add", methods=["POST"])
     def add_to_cart():
-        product_id = int(request.form.get("product_id"))
-        quantity = int(request.form.get("quantity", 1))
+        try:
+            parsed = parse_cart(
+                [{"product_id": request.form.get("product_id"), "quantity": request.form.get("quantity", "1")}]
+            )
+        except CartValidationError as error:
+            flash(str(error), "error")
+            return redirect(url_for("shop"))
+        product_id = parsed[0]["product_id"]
+        quantity = parsed[0]["quantity"]
         product = Product.query.get_or_404(product_id)
+        if product.stock < quantity:
+            flash("The requested quantity is not currently in stock.", "error")
+            return redirect(url_for("product_detail", product_id=product_id))
 
         cart = session.get("cart", [])
-        for item in cart:
-            if int(item.get("product_id")) == product_id:
-                item["quantity"] = int(item.get("quantity", 1)) + quantity
-                session["cart"] = cart
-                return redirect("/cart")
-
-        cart.append(
-            {
-                "product_id": product.id,
-                "name": product.name,
-                "price": float(product.price),
-                "quantity": quantity,
-            }
-        )
-        session["cart"] = cart
-        return redirect("/cart")
+        try:
+            cart = parse_cart(cart) if cart else []
+            updated = parse_cart(
+                cart + [{"product_id": product.id, "quantity": quantity}]
+            )
+        except CartValidationError as error:
+            flash(str(error), "error")
+            return redirect(url_for("cart"))
+        if not any(item["product_id"] == product_id for item in updated):
+            flash("Your cart could not be updated.", "error")
+            return redirect(url_for("cart"))
+        item = next(item for item in updated if item["product_id"] == product_id)
+        if item["quantity"] > product.stock:
+            flash("The requested quantity is not currently in stock.", "error")
+            return redirect(url_for("cart"))
+        if len(updated) > MAX_CART_LINES:
+            flash(f"A cart can contain at most {MAX_CART_LINES} products.", "error")
+            return redirect(url_for("cart"))
+        session["cart"] = updated
+        return redirect(url_for("cart"))
 
     @app.route("/cart/update", methods=["POST"])
     def update_cart():
-        cart = session.get("cart", [])
-        for item in cart:
-            product_id = int(item.get("product_id"))
-            qty = int(request.form.get(f"quantity_{product_id}", item.get("quantity", 1)))
-            item["quantity"] = max(1, qty)
-        session["cart"] = cart
-        return redirect("/cart")
+        try:
+            cart = parse_cart(session.get("cart", []))
+            updated = parse_cart([
+                {
+                    "product_id": item["product_id"],
+                    "quantity": request.form.get(
+                        f"quantity_{item['product_id']}", str(item["quantity"])
+                    ),
+                }
+                for item in cart
+            ])
+        except CartValidationError as error:
+            flash(str(error), "error")
+            return redirect(url_for("cart"))
+        session["cart"] = updated
+        return redirect(url_for("cart"))
 
-    @app.route("/cart/remove/<int:product_id>")
+    @app.route("/cart/remove/<int:product_id>", methods=["POST"])
     def remove_from_cart(product_id):
         cart = session.get("cart", [])
-        session["cart"] = [item for item in cart if int(item.get("product_id")) != product_id]
-        return redirect("/cart")
+        try:
+            cart = parse_cart(cart) if cart else []
+        except CartValidationError:
+            cart = []
+        session["cart"] = [
+            item for item in cart if item["product_id"] != product_id
+        ]
+        return redirect(url_for("cart"))
 
     @app.route("/checkout", methods=["GET", "POST"])
     def checkout():
@@ -509,27 +733,21 @@ def create_app():
                 customer=get_current_customer(),
             )
 
-        payload = request.get_json(silent=True) or request.form.to_dict()
-        raw_cart = payload.get("cart") or session.get("cart", [])
-        if isinstance(raw_cart, str):
-            try:
-                cart = json.loads(raw_cart)
-            except (TypeError, ValueError):
-                cart = []
-        else:
-            cart = raw_cart
-
-        if not cart:
-            return jsonify({"status": "error", "message": "Your cart is empty."}), 400
-
-        summary = build_cart_summary(cart)
-        if not summary["items"]:
-            return jsonify({"status": "error", "message": "Cart items could not be validated."}), 400
+        if request.is_json:
+            return jsonify({
+                "status": "error",
+                "message": "Checkout requires a multipart receipt upload.",
+            }), 415
+        payload = request.form
+        try:
+            cart = parse_cart(session.get("cart", []))
+        except CartValidationError as error:
+            return jsonify({"status": "error", "message": str(error)}), 400
 
         customer = get_current_customer()
         if customer is None:
             email = (payload.get("email") or "").strip().lower()
-            name = (payload.get("name") or payload.get("customer_name") or "Customer").strip()
+            name = (payload.get("name") or payload.get("customer_name") or "").strip()
             phone = (payload.get("phone") or payload.get("phone_number") or "").strip()
         else:
             email = customer.email
@@ -542,62 +760,148 @@ def create_app():
         payment_method = (payload.get("payment_method") or "manual_transfer").strip().lower()
         payment_reference = (payload.get("reference") or payload.get("transaction_reference") or "").strip()
 
-        if not email:
-            return jsonify({"status": "error", "message": "Customer email is required."}), 400
-
-        if payment_method in {"opay", "bank_transfer", "manual_transfer"} and not payment_reference:
+        if not name or len(name) > 150:
+            return jsonify({"status": "error", "message": "Enter a valid customer name."}), 400
+        if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email) or len(email) > 254:
+            return jsonify({"status": "error", "message": "Enter a valid customer email address."}), 400
+        if len(phone) > 40:
+            return jsonify({"status": "error", "message": "Phone number must be 40 characters or fewer."}), 400
+        if payment_method not in ALLOWED_PAYMENT_METHODS:
+            return jsonify({"status": "error", "message": "Choose a supported payment method."}), 400
+        if not payment_reference or len(payment_reference) > 120:
             return jsonify({"status": "error", "message": "A payment reference is required for the selected payment method."}), 400
-
-        receipt_file = None
-        if request.files and "receipt" in request.files:
-            receipt_file = save_receipt_file(request.files["receipt"])
-        elif payload.get("receipt_file"):
-            receipt_file = payload.get("receipt_file")
-
-        if payment_method in {"opay", "bank_transfer", "manual_transfer"} and not receipt_file:
-            return jsonify({"status": "error", "message": "A receipt upload is required for verification."}), 400
 
         if payment_reference and Order.query.filter_by(payment_reference=payment_reference).first():
             return jsonify({"status": "error", "message": "This payment reference has already been used."}), 409
 
-        order = Order(
-            customer_id=customer.id if customer else None,
-            customer_name=name,
-            user_email=email,
-            phone_number=phone,
-            total_amount=summary["total"],
-            payment_method=payment_method,
-            payment_status="awaiting_verification" if payment_method in {"opay", "bank_transfer", "manual_transfer"} else "pending",
-            fulfillment_status="pending",
-            payment_reference=payment_reference or None,
-            receipt_file=receipt_file,
-        )
-        db.session.add(order)
-        db.session.flush()
+        storage = app.extensions.get("receipt_storage")
+        if storage is None:
+            return jsonify({
+                "status": "error",
+                "message": "Private receipt storage is not configured. Please try again later.",
+            }), 503
+        try:
+            receipt_data, receipt_extension, receipt_content_type = validate_receipt_upload(
+                request.files.get("receipt"), MAX_RECEIPT_SIZE_BYTES
+            )
+        except CheckoutError as error:
+            return jsonify({"status": "error", "message": str(error)}), error.status_code
+        try:
+            receipt_key = storage.save(
+                receipt_data, receipt_extension, receipt_content_type
+            )
+        except ReceiptStorageError as error:
+            app.logger.warning("Private receipt upload failed: %s", error)
+            return jsonify({
+                "status": "error",
+                "message": "Receipt storage is temporarily unavailable. Please try again later.",
+            }), 503
 
-        for item in summary["items"]:
+        try:
+            product_ids = [item["product_id"] for item in cart]
+            products = {
+                product.id: product
+                for product in Product.query.filter(Product.id.in_(product_ids))
+                .order_by(Product.id)
+                .with_for_update()
+                .all()
+            }
+            if len(products) != len(product_ids):
+                raise CheckoutError("A product in your cart is no longer available.", 409)
+
+            total = Decimal("0.00")
+            for item in cart:
+                product = products[item["product_id"]]
+                if product.stock < item["quantity"]:
+                    raise CheckoutError(
+                        f"Only {product.stock} unit(s) of {product.name} remain in stock.",
+                        409,
+                    )
+                result = db.session.execute(
+                    update(Product)
+                    .where(
+                        Product.id == product.id,
+                        Product.stock >= item["quantity"],
+                    )
+                    .values(stock=Product.stock - item["quantity"])
+                )
+                if result.rowcount != 1:
+                    raise CheckoutError(
+                        f"Only {product.stock} unit(s) of {product.name} remain in stock.",
+                        409,
+                    )
+                total += product.price * item["quantity"]
+
+            order = Order(
+                customer_id=customer.id if customer else None,
+                customer_name=name,
+                user_email=email,
+                phone_number=phone or None,
+                total_amount=total,
+                inventory_deducted=True,
+                payment_method=payment_method,
+                payment_status="awaiting_verification",
+                fulfillment_status="pending",
+                payment_reference=payment_reference,
+                receipt_file=receipt_key,
+            )
+            db.session.add(order)
+            db.session.flush()
+
+            for item in cart:
+                product = products[item["product_id"]]
+                db.session.add(
+                    OrderItem(
+                        order_id=order.id,
+                        product_id=product.id,
+                        quantity=item["quantity"],
+                        unit_price=product.price,
+                    )
+                )
             db.session.add(
-                OrderItem(
+                PaymentAuditLog(
                     order_id=order.id,
-                    product_id=item["product_id"],
-                    quantity=item["quantity"],
-                    unit_price=item["price"],
+                    event="order_created",
+                    details=f"Order created with {payment_method} payment method.",
+                    actor="customer",
                 )
             )
-
-        db.session.add(
-            PaymentAuditLog(
-                order_id=order.id,
-                event="order_created",
-                details=f"Order created with {payment_method} payment method.",
-                actor="customer",
-            )
-        )
-        db.session.commit()
+            db.session.commit()
+        except CheckoutError as error:
+            db.session.rollback()
+            try:
+                storage.delete(receipt_key)
+            except ReceiptStorageError:
+                app.logger.exception("Unable to clean up an unused receipt.")
+            return jsonify({"status": "error", "message": str(error)}), error.status_code
+        except IntegrityError:
+            db.session.rollback()
+            try:
+                storage.delete(receipt_key)
+            except ReceiptStorageError:
+                app.logger.exception("Unable to clean up an unused receipt.")
+            if Order.query.filter_by(payment_reference=payment_reference).first():
+                return jsonify({"status": "error", "message": "This payment reference has already been used."}), 409
+            app.logger.exception("Checkout integrity constraint failed.")
+            return jsonify({
+                "status": "error",
+                "message": "The order could not be saved. Please try again.",
+            }), 500
+        except SQLAlchemyError:
+            db.session.rollback()
+            try:
+                storage.delete(receipt_key)
+            except ReceiptStorageError:
+                app.logger.exception("Unable to clean up an unused receipt.")
+            app.logger.exception("Checkout database transaction failed.")
+            return jsonify({
+                "status": "error",
+                "message": "The order could not be saved. Please try again.",
+            }), 500
 
         session["cart"] = []
 
-        if request.accept_mimetypes.accept_json and not request.files:
+        if request.accept_mimetypes.accept_json:
             return jsonify({
                 "status": "success",
                 "message": "Order submitted for payment verification.",
@@ -624,6 +928,42 @@ def create_app():
             })
 
         return render_template("success.html", reference=reference, order=order_dict)
+
+    @app.route("/admin/orders/<int:order_id>/receipt")
+    @admin_required
+    def admin_order_receipt(order_id):
+        order = Order.query.get_or_404(order_id)
+        if not order.receipt_file:
+            abort(404)
+        storage = app.extensions.get("receipt_storage")
+        if storage is None:
+            abort(503, description="Private receipt storage is unavailable.")
+        try:
+            data = storage.read(order.receipt_file, MAX_RECEIPT_SIZE_BYTES)
+        except ReceiptNotFound:
+            abort(404)
+        except ReceiptStorageError:
+            app.logger.exception("Unable to retrieve a private order receipt.")
+            abort(503, description="Private receipt storage is unavailable.")
+
+        extension = order.receipt_file.rsplit(".", 1)[-1]
+        content_type = {
+            "png": "image/png",
+            "jpg": "image/jpeg",
+            "webp": "image/webp",
+            "pdf": "application/pdf",
+        }.get(extension)
+        if content_type is None:
+            abort(404)
+        response = send_file(
+            BytesIO(data),
+            mimetype=content_type,
+            as_attachment=True,
+            download_name=f"order-{order.id}-receipt.{extension}",
+        )
+        response.headers["Cache-Control"] = "no-store"
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        return response
 
     @app.route("/admin/login", methods=["GET", "POST"])
     def admin_login():
@@ -667,7 +1007,7 @@ def create_app():
     @admin_required
     def admin_dashboard():
         paid_revenue = (
-            db.session.query(func.coalesce(func.sum(Order.total_amount), 0.0))
+            db.session.query(func.coalesce(func.sum(Order.total_amount), Decimal("0.00")))
             .filter(Order.payment_status == "paid")
             .scalar()
         )
@@ -712,7 +1052,7 @@ def create_app():
     @app.route("/admin/orders/<int:order_id>/verify", methods=["POST"])
     @admin_required
     def verify_order(order_id):
-        order = Order.query.get_or_404(order_id)
+        order = Order.query.filter_by(id=order_id).with_for_update().first_or_404()
         decision = request.form.get("decision", "").strip().lower()
 
         if decision not in {"approve", "reject"}:
@@ -731,6 +1071,18 @@ def create_app():
             order.fulfillment_status = "payment_issue"
             event = "payment_rejected"
             details = "Payment rejected by admin."
+            if order.inventory_deducted:
+                for item in order.items:
+                    result = db.session.execute(
+                        update(Product)
+                        .where(Product.id == item.product_id)
+                        .values(stock=Product.stock + item.quantity)
+                    )
+                    if result.rowcount != 1:
+                        db.session.rollback()
+                        flash("Inventory could not be restored; no order changes were saved.", "error")
+                        return redirect(url_for("admin_orders"))
+                order.inventory_deducted = False
 
         db.session.add(
             PaymentAuditLog(

@@ -1,3 +1,5 @@
+from decimal import Decimal, InvalidOperation
+
 import requests
 
 try:
@@ -20,9 +22,21 @@ def create_transaction(amount, email, *, currency="NGN"):
     if not PAYSTACK_SECRET_KEY:
         return {"error": "Paystack secret key is not configured."}
 
+    try:
+        amount_decimal = Decimal(str(amount))
+        amount_kobo = amount_decimal * 100
+        if (
+            not amount_decimal.is_finite()
+            or amount_decimal <= 0
+            or amount_kobo != amount_kobo.to_integral_value()
+        ):
+            return {"error": "Amount must be positive and use no more than two decimal places."}
+    except (InvalidOperation, TypeError, ValueError):
+        return {"error": "Enter a valid payment amount."}
+
     payload = {
         "email": email,
-        "amount": int(float(amount) * 100),
+        "amount": int(amount_kobo),
         "currency": currency,
     }
 

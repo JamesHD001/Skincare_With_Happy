@@ -1,22 +1,51 @@
 import io
 import os
 import unittest
-from unittest.mock import patch
+
+from PIL import Image
 
 os.environ["DATABASE_URL"] = "sqlite:///:memory:"
 os.environ["ADMIN_USERNAME"] = "test-admin"
 os.environ["ADMIN_PASSWORD"] = "test-admin-password"
 os.environ["SECRET_KEY"] = "test-session-secret"
 
-from app.app import create_app
+from app.app import create_app, seed_products
 from app.models import Customer, Order, db
 from werkzeug.security import check_password_hash
+
+
+class MemoryReceiptStorage:
+    def __init__(self):
+        self.files = {}
+
+    def save(self, data, extension, content_type):
+        key = f"receipts/{len(self.files):032x}.{extension}"
+        self.files[key] = (data, content_type)
+        return key
+
+    def read(self, key, max_bytes):
+        return self.files[key][0]
+
+    def delete(self, key):
+        self.files.pop(key, None)
+
+
+def valid_png():
+    image = Image.new("RGB", (1, 1), color="white")
+    output = io.BytesIO()
+    image.save(output, format="PNG")
+    output.seek(0)
+    return output
 
 
 class CustomerAccountTests(unittest.TestCase):
     def setUp(self):
         self.app = create_app()
         self.app.config.update(TESTING=True, SQLALCHEMY_DATABASE_URI="sqlite:///:memory:")
+        with self.app.app_context():
+            db.create_all()
+            seed_products()
+        self.app.extensions["receipt_storage"] = MemoryReceiptStorage()
         self.client = self.app.test_client()
         self.client.get("/signup")
 
@@ -147,17 +176,16 @@ class CustomerAccountTests(unittest.TestCase):
 
         with self.client.session_transaction() as session:
             session["cart"] = [{"product_id": 1, "quantity": 2}]
-        with patch("app.app.save_receipt_file", return_value="/static/uploads/payments/test.png"):
-            response = self.client.post(
-                "/checkout",
-                data={
-                    "csrf_token": self.csrf_token(),
-                    "payment_method": "manual_transfer",
-                    "reference": "SIGNED-CUSTOMER-ORDER",
-                    "phone": "+2348000000000",
-                    "receipt": (io.BytesIO(b"receipt"), "receipt.png"),
-                },
-            )
+        response = self.client.post(
+            "/checkout",
+            data={
+                "csrf_token": self.csrf_token(),
+                "payment_method": "manual_transfer",
+                "reference": "SIGNED-CUSTOMER-ORDER",
+                "phone": "+2348000000000",
+                "receipt": (valid_png(), "receipt.png"),
+            },
+        )
         self.assertEqual(response.status_code, 302)
         self.assertIn("/payment?ref=SIGNED-CUSTOMER-ORDER", response.location)
 
@@ -177,18 +205,17 @@ class CustomerAccountTests(unittest.TestCase):
         self.client.get("/checkout")
         with self.client.session_transaction() as session:
             session["cart"] = [{"product_id": 1, "quantity": 1}]
-        with patch("app.app.save_receipt_file", return_value="/static/uploads/payments/guest.png"):
-            response = self.client.post(
-                "/checkout",
-                data={
-                    "csrf_token": self.csrf_token(),
-                    "name": "Guest Buyer",
-                    "email": "Guest@Example.Test",
-                    "payment_method": "manual_transfer",
-                    "reference": "GUEST-CHECKOUT-ORDER",
-                    "receipt": (io.BytesIO(b"receipt"), "receipt.png"),
-                },
-            )
+        response = self.client.post(
+            "/checkout",
+            data={
+                "csrf_token": self.csrf_token(),
+                "name": "Guest Buyer",
+                "email": "Guest@Example.Test",
+                "payment_method": "manual_transfer",
+                "reference": "GUEST-CHECKOUT-ORDER",
+                "receipt": (valid_png(), "receipt.png"),
+            },
+        )
         self.assertEqual(response.status_code, 302)
         with self.app.app_context():
             order = Order.query.filter_by(payment_reference="GUEST-CHECKOUT-ORDER").one()
