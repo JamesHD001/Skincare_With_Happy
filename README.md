@@ -116,12 +116,13 @@ macOS/Linux:
 cp .env.example .env
 ```
 
-Set the values in the project-root `.env` locally; `.env.example` is a template only and is never loaded by the app. Existing process/Vercel environment variables take precedence. Never commit `.env` or paste database passwords and payment secrets into source files, screenshots, issues, or chat messages.
+Set the values in the project-root `.env` locally; `.env.example` is a template only and is never loaded by the app. Existing process/Vercel environment variables take precedence. When `APP_ENV=test`, the app does not load `.env`, preventing automated tests from inheriting deployment credentials. Never commit `.env` or paste database passwords and payment secrets into source files, screenshots, issues, or chat messages.
 
 - `SECRET_KEY`: set a long, random secret for Flask sessions.
+- `APP_ENV`: use `production` for a deployment. Production startup requires a unique `SECRET_KEY` of at least 32 characters and rejects known development defaults; the app fails with an actionable message without printing the secret. Development and test-only fallback keys are environment-specific and must never be used in production.
 - `ADMIN_USERNAME` and `ADMIN_PASSWORD`: bootstrap credentials for the protected admin console. Use unique credentials and keep them only in local/Vercel environment settings.
-- `DATABASE_URL`: Neon pooled PostgreSQL connection; when unset, the app uses the configured local SQLite path.
-- `DIRECT_DATABASE_URL`: direct database connection used by migrations and administrative tasks.
+- `DATABASE_URL`: Neon pooled PostgreSQL connection for normal application traffic; when unset, the app uses the configured local SQLite path.
+- `DIRECT_DATABASE_URL`: direct PostgreSQL connection preferred for Alembic migrations. Online migrations create a separate Psycopg 3 engine from this URL instead of using the application's pooled engine. If it is absent, migrations intentionally fall back to `DATABASE_URL` (which may be pooled); configure the direct URL for production schema changes.
 - `PAYSTACK_PUBLIC_KEY` and `PAYSTACK_SECRET_KEY`: optional payment-provider configuration.
 - `RECEIPT_STORAGE_BUCKET`, `RECEIPT_STORAGE_REGION`, `RECEIPT_STORAGE_ACCESS_KEY_ID`, and `RECEIPT_STORAGE_SECRET_ACCESS_KEY`: required for manual checkout receipt uploads. `RECEIPT_STORAGE_ENDPOINT_URL` is optional for S3-compatible providers. Configure the bucket to block public access; uploads use server-side AES256 encryption. Checkout fails safely when private storage is not configured.
 
@@ -198,7 +199,28 @@ The application uses SQLAlchemy models and Alembic migrations for products, orde
 
 The checkout-hardening migration converts legacy floating-point money values to `Numeric(14, 2)`. Before changing schema, it checks product prices, order totals, and order-item prices. It stops with a row-specific message if it finds non-finite values, values with more than two decimal places, or values outside the supported range; reconcile those rows manually and rerun. Do not bypass this check by rounding production data automatically.
 
-For a legacy database already populated by `db.create_all()` but missing `alembic_version`, first verify that its tables match the initial migration, then run `flask --app app.app db stamp 20261112_initial` once and `flask --app app.app db upgrade`. Do not stamp a fresh or structurally different database.
+Offline SQL generation (`flask --app app.app db upgrade --sql`) is supported and uses the selected migration URL's dialect without opening a database connection. Since offline generation cannot inspect existing tables or execute the money preflight, it assumes the configured Alembic starting revision and prints a warning. Run the money preflight against the target database and verify the schema before applying generated SQL.
+
+### Legacy database upgrade and baseline
+
+The supported pre-Alembic baseline is the application's historical `db.create_all()` schema: the common `products`, `orders`, `order_items`, and `payment_audit_logs` tables from revision `20261112_initial`, optionally already extended with `admin_profiles`, `customers`, `orders.customer_id`, and a 254-character `orders.user_email`. Later admin/customer migrations detect those existing additions; the checkout-hardening migration converts the legacy floating-point money columns and adds inventory tracking.
+
+For a database without `alembic_version`, first make and verify a restorable backup, then rehearse on an isolated copy. Confirm the shared base tables and columns match revision `20261112_initial`; if admin/customer tables or fields already exist, verify their columns, foreign keys, indexes, and unique constraints against the historical application schema as well. These migrations skip already-present objects; they do not repair a partial or structurally different table. Check that all money values are finite, have at most two decimal places, and fit `Numeric(14, 2)`. Only for that verified legacy shape, stamp the **initial baseline** and upgrade:
+
+```powershell
+flask --app app.app db stamp 20261112_initial
+flask --app app.app db upgrade head
+```
+
+Do not stamp a fresh database or use `stamp head` as a general legacy-upgrade procedure. If the schema differs, stop and determine a specific baseline or manual reconciliation before running migrations. If `alembic_version` already contains a revision, do not stamp it; upgrade from its recorded revision.
+
+The automated legacy checks build disposable SQLite databases for both the initial schema and the historical `db.create_all()` shape, populate products, orders, items, and payment audit rows, then stamp the initial baseline and upgrade to head. Run them with:
+
+```powershell
+python -m unittest discover -s tests -p test_legacy_migration.py
+```
+
+These tests verify data preservation, customer schema, constraints, indexes, fixed-precision columns, and that an invalid legacy amount stops the checkout-hardening migration before it changes money columns or advances the revision. They do not replace a rehearsal on a restorable copy of each real database.
 
 ## Payments and security
 
@@ -210,13 +232,21 @@ Never store secret keys in the repository. Use environment variables and the hos
 
 ## Tests
 
-Run the local SQLite-backed suite after installing `requirements.txt`:
+Run the local suite after installing `requirements.txt`:
 
 ```powershell
 python -m unittest discover -s tests
 ```
 
-The PostgreSQL migration test is opt-in. Set `TEST_DATABASE_URL` to a **fresh, disposable** PostgreSQL database whose name ends in `_test`, then run the same suite. It verifies the database has no tables before applying migrations and never drops or resets the database. Do not use a production URL. No PostgreSQL test is run unless this variable is explicitly provided.
+PostgreSQL URLs are normalized to SQLAlchemy's `postgresql+psycopg://` driver while preserving URL query parameters such as `sslmode=require`. To run the opt-in PostgreSQL migration test, configure a reachable, disposable PostgreSQL database whose actual name ends in `_test`, and explicitly enable the test:
+
+```powershell
+$env:TEST_DATABASE_URL = "postgresql://<test-user>:<test-password>@<test-host>/<database>_test?sslmode=require"
+$env:RUN_POSTGRES_MIGRATION_TESTS = "1"
+python -m unittest discover -s tests -p test_postgres_migration.py
+```
+
+Use only test credentials and a disposable database, never production credentials or the application database. The test refuses a URL matching `DATABASE_URL` or `DIRECT_DATABASE_URL`, creates a uniquely named temporary schema, migrates and verifies that schema, and drops only that exact schema in cleanup; it never drops or resets a database. Setting `RUN_POSTGRES_MIGRATION_TESTS=1` without a valid `TEST_DATABASE_URL` fails clearly. Without the explicit opt-in, this test is skipped.
 
 ## Project roadmap
 

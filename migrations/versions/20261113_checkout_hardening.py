@@ -51,7 +51,14 @@ def _validate_money_precision() -> None:
 
 
 def upgrade() -> None:
-    _validate_money_precision()
+    if op.get_context().as_sql:
+        logging.getLogger("alembic.runtime.migration").warning(
+            "Offline SQL generation cannot validate existing money values; "
+            "run the checkout-hardening data preflight on the target database "
+            "before applying this SQL."
+        )
+    else:
+        _validate_money_precision()
 
     for table, column in MONEY_COLUMNS:
         with op.batch_alter_table(table) as batch_op:
@@ -62,9 +69,14 @@ def upgrade() -> None:
                 existing_nullable=False,
             )
 
-    inspector = sa.inspect(op.get_bind())
-    order_columns = {column["name"] for column in inspector.get_columns("orders")}
-    if "inventory_deducted" not in order_columns:
+    offline_mode = op.get_context().as_sql
+    inspector = None if offline_mode else sa.inspect(op.get_bind())
+    order_columns = (
+        set()
+        if offline_mode
+        else {column["name"] for column in inspector.get_columns("orders")}
+    )
+    if offline_mode or "inventory_deducted" not in order_columns:
         with op.batch_alter_table("orders") as batch_op:
             batch_op.add_column(
                 sa.Column(

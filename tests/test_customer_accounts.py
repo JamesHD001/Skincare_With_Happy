@@ -7,6 +7,7 @@ from PIL import Image
 os.environ["DATABASE_URL"] = "sqlite:///:memory:"
 os.environ["ADMIN_USERNAME"] = "test-admin"
 os.environ["ADMIN_PASSWORD"] = "test-admin-password"
+os.environ["APP_ENV"] = "test"
 os.environ["SECRET_KEY"] = "test-session-secret"
 
 from app.app import create_app, seed_products

@@ -50,3 +50,17 @@
 - [x] Keep legacy guest orders unassociated unless ownership can be safely verified.
 - [x] Add and validate the customer-account database migration.
 - [ ] Add email verification and password recovery before relying on accounts for sensitive ownership claims.
+
+## Second-round security and migration corrections
+- [x] Require a unique, sufficiently long production `SECRET_KEY`; reject missing and known insecure values without logging the secret.
+- [x] Make online Alembic migrations use `DIRECT_DATABASE_URL`, with an intentional `DATABASE_URL` fallback, and normalize conventional PostgreSQL URLs to Psycopg 3.
+- [x] Normalize PostgreSQL test URLs, preserve connection options, and isolate the opt-in migration test in a disposable schema with targeted cleanup.
+- [x] Add temporary SQLite upgrade tests for both the initial legacy baseline and the historical `db.create_all()` schema, including data preservation and migration preflight failure behavior.
+- [x] Preserve offline Alembic SQL generation and warn that offline output cannot run schema checks or the money preflight.
+- [x] Document the tested legacy baseline, the manual backup/rehearsal procedure, and PostgreSQL test setup in `README.md`.
+- [x] Run the complete local suite: 37 passed, 1 skipped (38 total); the opt-in PostgreSQL migration test was skipped because no disposable PostgreSQL database was configured.
+- [ ] Run the fresh PostgreSQL migration test against a disposable PostgreSQL database; it has not been run unless explicitly configured.
+- [ ] Rehearse the legacy migration procedure on a restorable copy of each real database before applying migrations to that database.
+- [ ] Apply pending migrations to intended deployment databases only after reviewing the data preflight and verifying the direct migration connection.
+
+Email verification and customer password recovery remain incomplete. Do not treat the second-round corrections or SQLite migration tests as evidence of production readiness.

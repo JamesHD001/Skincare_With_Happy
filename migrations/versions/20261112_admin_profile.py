@@ -16,7 +16,8 @@ depends_on = None
 
 
 def upgrade() -> None:
-    if not sa.inspect(op.get_bind()).has_table("admin_profiles"):
+    offline_mode = op.get_context().as_sql
+    if offline_mode or not sa.inspect(op.get_bind()).has_table("admin_profiles"):
         op.create_table(
             "admin_profiles",
             sa.Column("id", sa.Integer(), nullable=False),

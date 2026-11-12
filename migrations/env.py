@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-import logging
 from logging.config import fileConfig
 
 from alembic import context
-from flask import current_app
+from sqlalchemy import create_engine, pool
 
-from app.config import DIRECT_DATABASE_URL, SQLALCHEMY_DATABASE_URI
+from app.config import MIGRATION_DATABASE_URL
 from app.models import db
 
 config = context.config
@@ -14,8 +13,10 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-migration_url = DIRECT_DATABASE_URL or SQLALCHEMY_DATABASE_URI
-config.set_main_option("sqlalchemy.url", migration_url.replace("%", "%%"))
+config.set_main_option(
+    "sqlalchemy.url",
+    MIGRATION_DATABASE_URL.replace("%", "%%"),
+)
 
 target_metadata = db.metadata
 
@@ -34,8 +35,8 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
-    with current_app.app_context():
-        connectable = db.engine
+    connectable = create_engine(MIGRATION_DATABASE_URL, poolclass=pool.NullPool)
+    try:
         with connectable.connect() as connection:
             context.configure(
                 connection=connection,
@@ -44,6 +45,8 @@ def run_migrations_online() -> None:
 
             with context.begin_transaction():
                 context.run_migrations()
+    finally:
+        connectable.dispose()
 
 
 if context.is_offline_mode():

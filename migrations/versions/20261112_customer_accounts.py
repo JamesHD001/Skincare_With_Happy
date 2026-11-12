@@ -16,8 +16,9 @@ depends_on = None
 
 
 def upgrade() -> None:
-    inspector = sa.inspect(op.get_bind())
-    if not inspector.has_table("customers"):
+    offline_mode = op.get_context().as_sql
+    inspector = None if offline_mode else sa.inspect(op.get_bind())
+    if offline_mode or not inspector.has_table("customers"):
         op.create_table(
             "customers",
             sa.Column("id", sa.Integer(), nullable=False),
@@ -31,8 +32,12 @@ def upgrade() -> None:
             sa.UniqueConstraint("email"),
         )
 
-    order_columns = {column["name"] for column in inspector.get_columns("orders")}
-    if "customer_id" not in order_columns:
+    order_columns = (
+        set()
+        if offline_mode
+        else {column["name"] for column in inspector.get_columns("orders")}
+    )
+    if offline_mode or "customer_id" not in order_columns:
         with op.batch_alter_table("orders") as batch_op:
             batch_op.add_column(sa.Column("customer_id", sa.Integer(), nullable=True))
             batch_op.create_foreign_key(
@@ -42,12 +47,23 @@ def upgrade() -> None:
                 ["id"],
             )
 
-    order_indexes = {index["name"] for index in inspector.get_indexes("orders")}
-    if "ix_orders_customer_id" not in order_indexes:
+    order_indexes = (
+        set()
+        if offline_mode
+        else {index["name"] for index in inspector.get_indexes("orders")}
+    )
+    if offline_mode or "ix_orders_customer_id" not in order_indexes:
         op.create_index("ix_orders_customer_id", "orders", ["customer_id"])
 
-    user_email = next(column for column in inspector.get_columns("orders") if column["name"] == "user_email")
-    if getattr(user_email["type"], "length", None) != 254:
+    user_email_length = None
+    if not offline_mode:
+        user_email = next(
+            column
+            for column in inspector.get_columns("orders")
+            if column["name"] == "user_email"
+        )
+        user_email_length = getattr(user_email["type"], "length", None)
+    if offline_mode or user_email_length != 254:
         with op.batch_alter_table("orders") as batch_op:
             batch_op.alter_column(
                 "user_email",
