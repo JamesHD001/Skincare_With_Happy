@@ -1,19 +1,55 @@
-<footer>
-    <div class="footer-logo">
-        <span style="font-weight: light,padding-bottom: 0">SkincareWithHappy</span>
-        <img src="/static/img/logo.png" alt="Skincare With Happy Logo" style>        
-        <small style="font-style: italic, padding-top: 0">Gentle care. Calm, Clear & Visible glow. Confident skin!</small>
+<footer class="premium-footer">
+    <div class="premium-footer__main">
+        <section class="premium-footer__brand" aria-label="About Skincare With Happy">
+            <a class="premium-footer__identity" href="{{ url_for('index') }}">
+                <img src="{{ url_for('static', filename='img/logo.png') }}" alt="">
+                <span>SkincareWithHappy</span>
+            </a>
+            <p>Thoughtful skincare and practical education for calm, confident skin.</p>
+            {% if footer_social_links %}
+                <nav class="premium-footer__social" aria-label="Social media">
+                    {% for label, href in footer_social_links %}
+                        <a href="{{ href }}" target="_blank" rel="noopener noreferrer">{{ label }}</a>
+                    {% endfor %}
+                </nav>
+            {% endif %}
+        </section>
+
+        <nav class="premium-footer__links" aria-label="Shop">
+            <h2>Explore</h2>
+            <a href="{{ url_for('shop') }}">Shop all products</a>
+            <a href="{{ url_for('products') }}">Product catalog</a>
+            <a href="{{ url_for('learn') }}">Skincare learning</a>
+        </nav>
+
+        <nav class="premium-footer__links" aria-label="Information">
+            <h2>Information</h2>
+            <a href="{{ url_for('about') }}">About us</a>
+            <a href="{{ url_for('contact') }}">Contact</a>
+            <a href="{{ url_for('privacy') }}">Privacy policy</a>
+            <a href="{{ url_for('account') }}">Your account</a>
+            {% if footer_contact_email %}
+                <a href="mailto:{{ footer_contact_email }}">{{ footer_contact_email }}</a>
+            {% endif %}
+            {% if footer_contact_phone %}
+                <a href="tel:{{ footer_contact_phone }}">{{ footer_contact_phone }}</a>
+            {% endif %}
+        </nav>
+
+        <section class="premium-footer__newsletter">
+            <h2>Stay in the know</h2>
+            <p>Newsletter subscriptions are not available yet. Visit our learning hub for skincare guidance.</p>
+            <a class="premium-footer__learn-link" href="{{ url_for('learn') }}">Explore the learning hub</a>
+        </section>
     </div>
 
-    <div>
-        <a href="shop.html">Shop</a>
-        <a href="learn.html">Learn</a>
-        <a href="about.html">About</a>
-        <a href="contact.html">Contact</a>
-    </div>
-
-    <div>
-        <p>Subscribe for skincare education</p>
+    <div class="premium-footer__bottom">
+        <span>&copy; {{ current_year }} Skincare With Happy. All rights reserved.</span>
+        <nav aria-label="Footer navigation">
+            <a href="{{ url_for('shop') }}">Shop</a>
+            <a href="{{ url_for('about') }}">About</a>
+            <a href="{{ url_for('contact') }}">Contact</a>
+            <a href="{{ url_for('privacy') }}">Privacy</a>
+        </nav>
     </div>
 </footer>
-<script src="/static/js/main.js"></script>

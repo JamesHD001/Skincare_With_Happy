@@ -24,20 +24,19 @@
 </section>
 
 <section class="section" id="products">
-    <h2>Just In</h2>
-    <div class="products">
-        <div class="product-card">
-            <div class="product-img"></div>
-            <p>Gentle Cleanser</p>
+    <div class="catalog-heading">
+        <div>
+            <p class="catalog-eyebrow">The collection</p>
+            <h2>Find your new essentials</h2>
         </div>
-        <div class="product-card">
-            <div class="product-img"></div>
-            <p>Hydrating Serum</p>
-        </div>
-        <div class="product-card">
-            <div class="product-img"></div>
-            <p>Soothing Moisturizer</p>
-        </div>
+        <a class="catalog-heading__link" href="{{ url_for('products') }}">Shop all products</a>
+    </div>
+    <div class="catalog-grid">
+        {% for product in products %}
+            {% include "partials/product_card.html" %}
+        {% else %}
+            <p class="catalog-empty">Our product collection is being prepared. Please check back soon.</p>
+        {% endfor %}
     </div>
 </section>
 

@@ -616,7 +616,7 @@ a {
 }
 
 .product-table {
-    min-width: 800px;
+    min-width: 1120px;
 }
 
 .table-input {
@@ -636,6 +636,37 @@ a {
 
 .description-input {
     min-width: 150px;
+}
+
+.product-image-cell {
+    display: grid;
+    justify-items: start;
+    gap: 7px;
+    min-width: 180px;
+}
+
+.product-image-preview {
+    width: 58px;
+    height: 58px;
+    border-radius: 8px;
+    background: #f0f3ed;
+    object-fit: cover;
+}
+
+.product-image-upload {
+    max-width: 190px;
+    padding: 5px !important;
+}
+
+.product-image-actions {
+    min-width: 130px;
+}
+
+.product-image-actions .button {
+    display: block;
+    width: 100%;
+    margin: 0 0 6px;
+    white-space: nowrap;
 }
 
 .add-product-panel {

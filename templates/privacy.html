@@ -1,0 +1,32 @@
+{% extends "layout.html" %}
+{% block title %}Privacy | Skincare With Happy{% endblock %}
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/content-pages.css') }}">
+{% endblock %}
+
+{% block content %}
+<article class="content-page content-page--privacy">
+    <header class="content-page__hero">
+        <p class="catalog-eyebrow">Privacy information</p>
+        <h1>How this store handles your information</h1>
+        <p>This page describes the information the current storefront is built to handle. It is a plain-language overview, not legal advice.</p>
+    </header>
+
+    <section class="content-page__section">
+        <h2>Information used to operate the store</h2>
+        <p>When you create an account or place an order, the store may process the name, email address, phone number, products, quantities, order totals, payment reference, and receipt that you provide. Account passwords are stored as password hashes rather than readable passwords.</p>
+        <p>Essential session data supports sign-in, cart, and security checks. The application does not collect card details through its current manual-transfer checkout.</p>
+    </section>
+
+    <section class="content-page__section">
+        <h2>How information is used and protected</h2>
+        <p>Order and account information is used to operate the storefront, manage customer accounts, and review submitted payments. Uploaded payment receipts are stored separately from public product images and are available through administrator-authenticated access.</p>
+        <p>The application uses service providers configured by its operator for hosting, database, and storage. The specific providers depend on the deployment configuration.</p>
+    </section>
+
+    <section class="content-page__section">
+        <h2>Questions</h2>
+        <p>For questions about information associated with an account or order, visit the <a href="{{ url_for('contact') }}">Contact page</a>. Direct contact details are shown there only when configured by the store operator.</p>
+    </section>
+</article>
+{% endblock %}

@@ -40,8 +40,18 @@ try:
         APP_ENV,
         DATABASE_URL,
         DIRECT_DATABASE_URL,
+        FOOTER_CONTACT_EMAIL,
+        FOOTER_CONTACT_PHONE,
+        FOOTER_SOCIAL_LINKS,
         MAX_RECEIPT_SIZE_BYTES,
+        MAX_PRODUCT_IMAGE_SIZE_BYTES,
         PAYSTACK_PUBLIC_KEY,
+        PRODUCT_IMAGE_STORAGE_ACCESS_KEY_ID,
+        PRODUCT_IMAGE_STORAGE_BUCKET,
+        PRODUCT_IMAGE_STORAGE_ENDPOINT_URL,
+        PRODUCT_IMAGE_STORAGE_PUBLIC_BASE_URL,
+        PRODUCT_IMAGE_STORAGE_REGION,
+        PRODUCT_IMAGE_STORAGE_SECRET_ACCESS_KEY,
         RECEIPT_STORAGE_ACCESS_KEY_ID,
         RECEIPT_STORAGE_BUCKET,
         RECEIPT_STORAGE_ENDPOINT_URL,
@@ -56,6 +66,12 @@ try:
         ReceiptStorageError,
         create_receipt_storage,
     )
+    from app.product_image_storage import (
+        ProductImageError,
+        ProductImageStorageError,
+        create_product_image_storage,
+        validate_product_image,
+    )
 except ImportError:  # pragma: no cover - compatibility for direct script execution
     from config import (
         ADMIN_PASSWORD,
@@ -63,8 +79,18 @@ except ImportError:  # pragma: no cover - compatibility for direct script execut
         APP_ENV,
         DATABASE_URL,
         DIRECT_DATABASE_URL,
+        FOOTER_CONTACT_EMAIL,
+        FOOTER_CONTACT_PHONE,
+        FOOTER_SOCIAL_LINKS,
         MAX_RECEIPT_SIZE_BYTES,
+        MAX_PRODUCT_IMAGE_SIZE_BYTES,
         PAYSTACK_PUBLIC_KEY,
+        PRODUCT_IMAGE_STORAGE_ACCESS_KEY_ID,
+        PRODUCT_IMAGE_STORAGE_BUCKET,
+        PRODUCT_IMAGE_STORAGE_ENDPOINT_URL,
+        PRODUCT_IMAGE_STORAGE_PUBLIC_BASE_URL,
+        PRODUCT_IMAGE_STORAGE_REGION,
+        PRODUCT_IMAGE_STORAGE_SECRET_ACCESS_KEY,
         RECEIPT_STORAGE_ACCESS_KEY_ID,
         RECEIPT_STORAGE_BUCKET,
         RECEIPT_STORAGE_ENDPOINT_URL,
@@ -79,12 +105,24 @@ except ImportError:  # pragma: no cover - compatibility for direct script execut
         ReceiptStorageError,
         create_receipt_storage,
     )
+    from product_image_storage import (
+        ProductImageError,
+        ProductImageStorageError,
+        create_product_image_storage,
+        validate_product_image,
+    )
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 MAX_CART_LINES = 20
 MAX_ITEM_QUANTITY = 20
 ALLOWED_PAYMENT_METHODS = {"manual_transfer", "bank_transfer", "opay"}
+BUILT_IN_PRODUCT_IMAGES = {
+    "niacinamide-balancing-serum": "builtin/niacinamide-balancing-serum.svg",
+    "gentle-cream-cleanser": "builtin/gentle-cream-cleanser.svg",
+    "vitamin-c-glow-essence": "builtin/vitamin-c-glow-essence.svg",
+    "hydrating-barrier-cream": "builtin/hydrating-barrier-cream.svg",
+}
 RECEIPT_FORMATS = {
     ".png": ("png", "image/png"),
     ".jpg": ("jpeg", "image/jpeg"),
@@ -103,6 +141,7 @@ def seed_products():
             "price": Decimal("30.00"),
             "description": "Lightweight serum for oily and combination skin.",
             "stock": 25,
+            "image_key": BUILT_IN_PRODUCT_IMAGES["niacinamide-balancing-serum"],
         },
         {
             "name": "Gentle Cream Cleanser",
@@ -111,6 +150,7 @@ def seed_products():
             "price": Decimal("18.00"),
             "description": "Comforting cleanser for normal to dry skin.",
             "stock": 30,
+            "image_key": BUILT_IN_PRODUCT_IMAGES["gentle-cream-cleanser"],
         },
         {
             "name": "Vitamin C Glow Essence",
@@ -119,6 +159,7 @@ def seed_products():
             "price": Decimal("28.00"),
             "description": "Brightening treatment to support an even-looking glow.",
             "stock": 20,
+            "image_key": BUILT_IN_PRODUCT_IMAGES["vitamin-c-glow-essence"],
         },
         {
             "name": "Hydrating Barrier Cream",
@@ -127,6 +168,7 @@ def seed_products():
             "price": Decimal("34.00"),
             "description": "Deep hydration to reinforce the skin barrier.",
             "stock": 18,
+            "image_key": BUILT_IN_PRODUCT_IMAGES["hydrating-barrier-cream"],
         },
     ]
 
@@ -352,12 +394,20 @@ def create_app():
     app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
     app.config["SESSION_COOKIE_SECURE"] = APP_ENV == "production"
     app.config["MAX_CONTENT_LENGTH"] = MAX_RECEIPT_SIZE_BYTES + 64 * 1024
+    app.config["MAX_PRODUCT_IMAGE_SIZE_BYTES"] = MAX_PRODUCT_IMAGE_SIZE_BYTES
     app.config["RECEIPT_STORAGE_BUCKET"] = RECEIPT_STORAGE_BUCKET
     app.config["RECEIPT_STORAGE_REGION"] = RECEIPT_STORAGE_REGION
     app.config["RECEIPT_STORAGE_ENDPOINT_URL"] = RECEIPT_STORAGE_ENDPOINT_URL
     app.config["RECEIPT_STORAGE_ACCESS_KEY_ID"] = RECEIPT_STORAGE_ACCESS_KEY_ID
     app.config["RECEIPT_STORAGE_SECRET_ACCESS_KEY"] = RECEIPT_STORAGE_SECRET_ACCESS_KEY
+    app.config["PRODUCT_IMAGE_STORAGE_BUCKET"] = PRODUCT_IMAGE_STORAGE_BUCKET
+    app.config["PRODUCT_IMAGE_STORAGE_REGION"] = PRODUCT_IMAGE_STORAGE_REGION
+    app.config["PRODUCT_IMAGE_STORAGE_ENDPOINT_URL"] = PRODUCT_IMAGE_STORAGE_ENDPOINT_URL
+    app.config["PRODUCT_IMAGE_STORAGE_ACCESS_KEY_ID"] = PRODUCT_IMAGE_STORAGE_ACCESS_KEY_ID
+    app.config["PRODUCT_IMAGE_STORAGE_SECRET_ACCESS_KEY"] = PRODUCT_IMAGE_STORAGE_SECRET_ACCESS_KEY
+    app.config["PRODUCT_IMAGE_STORAGE_PUBLIC_BASE_URL"] = PRODUCT_IMAGE_STORAGE_PUBLIC_BASE_URL
     app.extensions["receipt_storage"] = create_receipt_storage(app.config)
+    app.extensions["product_image_storage"] = create_product_image_storage(app.config)
 
     db.init_app(app)
     Migrate(app, db)
@@ -420,6 +470,58 @@ def create_app():
         session.pop("customer_name", None)
         session["customer_csrf_token"] = secrets.token_urlsafe(32)
 
+    def product_image_url(image_key):
+        if not image_key:
+            return None
+        for slug, built_in_key in BUILT_IN_PRODUCT_IMAGES.items():
+            if image_key == built_in_key:
+                return url_for("static", filename=f"img/products/{slug}.svg")
+        storage = app.extensions.get("product_image_storage")
+        return storage.public_url(image_key) if storage is not None else None
+
+    def store_uploaded_product_image():
+        image_file = request.files.get("image")
+        if image_file is None or not image_file.filename:
+            return None, None
+        try:
+            image_data = validate_product_image(
+                image_file, app.config["MAX_PRODUCT_IMAGE_SIZE_BYTES"]
+            )
+        except ProductImageError as error:
+            return None, str(error)
+
+        storage = app.extensions.get("product_image_storage")
+        if storage is None:
+            return None, (
+                "Product image storage is not configured. Configure the separate "
+                "public product-image bucket before uploading."
+            )
+        try:
+            return storage.save(image_data), None
+        except ProductImageStorageError:
+            app.logger.warning("Product image upload failed.")
+            return None, "Product image storage is temporarily unavailable."
+
+    def available_product_skin_types():
+        return [
+            skin_type
+            for (skin_type,) in (
+                db.session.query(Product.skin_type)
+                .distinct()
+                .order_by(Product.skin_type)
+                .all()
+            )
+            if skin_type
+        ]
+
+    def cleanup_uploaded_product_image(storage, image_key):
+        if storage is None or not image_key:
+            return
+        try:
+            storage.delete(image_key)
+        except ProductImageStorageError:
+            app.logger.warning("Unable to clean up an unused product image.")
+
     def get_current_customer():
         customer_id = session.get("customer_id")
         if customer_id is None:
@@ -454,7 +556,7 @@ def create_app():
             session["admin_csrf_token"] = csrf_token
         customer_csrf_token = session.get("customer_csrf_token", "")
         if (
-            request.path in {"/signup", "/signin", "/account", "/checkout", "/cart", "/shop", "/products"}
+            request.path in {"/", "/signup", "/signin", "/account", "/checkout", "/cart", "/shop", "/products"}
             or request.path.startswith("/product/")
             or request.path.startswith("/cart/")
         ) and not customer_csrf_token:
@@ -466,6 +568,10 @@ def create_app():
             "admin_csrf_token": csrf_token,
             "customer_csrf_token": customer_csrf_token,
             "admin_profile": admin_profile,
+            "product_image_url": product_image_url,
+            "footer_social_links": FOOTER_SOCIAL_LINKS,
+            "footer_contact_email": FOOTER_CONTACT_EMAIL,
+            "footer_contact_phone": FOOTER_CONTACT_PHONE,
         }
 
     @app.template_filter("naira")
@@ -508,6 +614,9 @@ def create_app():
     def handle_large_upload(error):
         if request.path == "/checkout":
             return jsonify({"status": "error", "message": "Receipt files must be 5 MB or smaller."}), 413
+        if request.path == "/admin/products" or request.path.startswith("/admin/products/"):
+            flash("Product images must be 4 MB or smaller.", "error")
+            return redirect(url_for("admin_products"))
         return error
 
     @app.cli.command("seed-products")
@@ -522,11 +631,21 @@ def create_app():
 
     @app.route("/")
     def index():
-        return render_template("index.html")
+        products = Product.query.order_by(Product.id).all()
+        return render_template("index.html", products=products)
 
     @app.route("/shop")
     def shop():
-        return render_template("shop.html", products=Product.query.order_by(Product.id).all())
+        skin_type = request.args.get("type", "").strip().lower()
+        query = Product.query
+        if skin_type:
+            query = query.filter(Product.skin_type == skin_type)
+        return render_template(
+            "shop.html",
+            products=query.order_by(Product.id).all(),
+            skin_type=skin_type,
+            skin_types=available_product_skin_types(),
+        )
 
     @app.route("/about")
     def about():
@@ -535,6 +654,10 @@ def create_app():
     @app.route("/contact")
     def contact():
         return render_template("contact.html")
+
+    @app.route("/privacy")
+    def privacy():
+        return render_template("privacy.html")
 
     @app.route("/learn")
     def learn():
@@ -634,11 +757,16 @@ def create_app():
 
     @app.route("/products")
     def products():
-        skin_type = request.args.get("type")
+        skin_type = request.args.get("type", "").strip().lower()
         query = Product.query
         if skin_type:
             query = query.filter(Product.skin_type == skin_type)
-        return render_template("products.html", products=query.order_by(Product.id).all())
+        return render_template(
+            "products.html",
+            products=query.order_by(Product.id).all(),
+            skin_type=skin_type,
+            skin_types=available_product_skin_types(),
+        )
 
     @app.route("/product/<int:product_id>")
     def product_detail(product_id):
@@ -1106,9 +1234,27 @@ def create_app():
                 flash(error, "error")
                 return redirect(url_for("admin_products"))
 
-            product = Product(**values, slug=make_product_slug(values["name"]))
+            image_key, image_error = store_uploaded_product_image()
+            if image_error:
+                flash(image_error, "error")
+                return redirect(url_for("admin_products"))
+
+            product = Product(
+                **values,
+                slug=make_product_slug(values["name"]),
+                image_key=image_key,
+            )
             db.session.add(product)
-            db.session.commit()
+            try:
+                db.session.commit()
+            except SQLAlchemyError:
+                db.session.rollback()
+                cleanup_uploaded_product_image(
+                    app.extensions.get("product_image_storage"), image_key
+                )
+                app.logger.exception("Product creation failed.")
+                flash("The product could not be saved. Please try again.", "error")
+                return redirect(url_for("admin_products"))
             flash(f"{product.name} was added to the catalog.", "success")
             return redirect(url_for("admin_products"))
 
@@ -1119,18 +1265,79 @@ def create_app():
     @admin_required
     def admin_edit_product(product_id):
         product = Product.query.get_or_404(product_id)
+        storage = app.extensions.get("product_image_storage")
+
+        if request.form.get("image_action", "save") == "remove":
+            old_image_key = product.image_key
+            product.image_key = None
+            try:
+                db.session.commit()
+            except SQLAlchemyError:
+                db.session.rollback()
+                app.logger.exception("Product image removal failed.")
+                flash("The product image could not be removed. Please try again.", "error")
+                return redirect(url_for("admin_products"))
+
+            removal_warning = False
+            if old_image_key and old_image_key.startswith("products/"):
+                if storage is None:
+                    removal_warning = True
+                else:
+                    try:
+                        storage.delete(old_image_key)
+                    except ProductImageStorageError:
+                        app.logger.warning("Removed product image could not be deleted from storage.")
+                        removal_warning = True
+            if removal_warning:
+                flash(
+                    "The image was removed from the catalog, but its stored file could not be cleaned up.",
+                    "warning",
+                )
+            else:
+                flash("The product image was removed.", "success")
+            return redirect(url_for("admin_products"))
+
+        if request.form.get("image_action", "save") != "save":
+            abort(400, description="Choose a valid product image action.")
+
         values, error = parse_product_form(request.form)
         if error:
             flash(error, "error")
             return redirect(url_for("admin_products"))
 
+        new_image_key, image_error = store_uploaded_product_image()
+        if image_error:
+            flash(image_error, "error")
+            return redirect(url_for("admin_products"))
+
+        old_image_key = product.image_key
         product.name = values["name"]
         product.slug = make_product_slug(values["name"], product_id=product.id)
         product.skin_type = values["skin_type"]
         product.price = values["price"]
         product.stock = values["stock"]
         product.description = values["description"]
-        db.session.commit()
+        if new_image_key:
+            product.image_key = new_image_key
+        try:
+            db.session.commit()
+        except SQLAlchemyError:
+            db.session.rollback()
+            cleanup_uploaded_product_image(storage, new_image_key)
+            app.logger.exception("Product update failed.")
+            flash("The product could not be updated. Please try again.", "error")
+            return redirect(url_for("admin_products"))
+
+        if new_image_key and old_image_key and old_image_key.startswith("products/"):
+            try:
+                storage.delete(old_image_key)
+            except ProductImageStorageError:
+                app.logger.warning("Replaced product image could not be deleted from storage.")
+                flash(
+                    f"{product.name} was updated, but its previous image file could not be cleaned up.",
+                    "warning",
+                )
+                return redirect(url_for("admin_products"))
         flash(f"{product.name} was updated.", "success")
         return redirect(url_for("admin_products"))
 

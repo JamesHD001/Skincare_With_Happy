@@ -143,6 +143,19 @@ def create_legacy_database(database_path, include_customer_schema, invalid_money
                     "created_at": datetime(2026, 1, 1),
                 },
             )
+            connection.execute(
+                products.insert(),
+                {
+                    "id": 8,
+                    "name": "Niacinamide Balancing Serum",
+                    "slug": "niacinamide-balancing-serum",
+                    "skin_type": "oily",
+                    "price": 30.00,
+                    "description": "Seeded catalog item",
+                    "stock": 25,
+                    "created_at": datetime(2026, 1, 1),
+                },
+            )
             order_data = {
                 "id": 31,
                 "customer_name": "Legacy Buyer",
@@ -282,7 +295,7 @@ class LegacyMigrationTests(unittest.TestCase):
                         connection.execute(
                             text("SELECT version_num FROM alembic_version")
                         ).scalar_one(),
-                        "20261113_checkout_hardening",
+                        "20261114_product_images",
                     )
             finally:
                 application_engine.dispose()
@@ -357,13 +370,19 @@ class LegacyMigrationTests(unittest.TestCase):
                         connection.execute(
                             text("SELECT version_num FROM alembic_version")
                         ).scalar_one(),
-                        "20261113_checkout_hardening",
+                        "20261114_product_images",
                     )
                     self.assertEqual(
                         connection.execute(
-                            text("SELECT name, price FROM products WHERE id=7")
+                            text("SELECT name, price, image_key FROM products WHERE id=7")
                         ).one(),
-                        ("Legacy Serum", 12.34),
+                        ("Legacy Serum", 12.34, None),
+                    )
+                    self.assertEqual(
+                        connection.execute(
+                            text("SELECT image_key FROM products WHERE id=8")
+                        ).scalar_one(),
+                        "builtin/niacinamide-balancing-serum.svg",
                     )
                     order = connection.execute(
                         text(
@@ -397,7 +416,7 @@ class LegacyMigrationTests(unittest.TestCase):
                     )
                     self.assertEqual(
                         connection.execute(text("SELECT count(*) FROM products")).scalar_one(),
-                        1,
+                        2,
                     )
                     self.assertEqual(
                         connection.execute(text("SELECT count(*) FROM order_items")).scalar_one(),
@@ -421,6 +440,12 @@ class LegacyMigrationTests(unittest.TestCase):
                     column["name"]: column
                     for column in inspector.get_columns("orders")
                 }
+                product_columns = {
+                    column["name"]: column
+                    for column in inspector.get_columns("products")
+                }
+                self.assertEqual(product_columns["image_key"]["type"].length, 255)
+                self.assertTrue(product_columns["image_key"]["nullable"])
                 self.assertEqual(order_columns["user_email"]["type"].length, 254)
                 self.assertIn("customer_id", order_columns)
                 for table_name, column_name in (

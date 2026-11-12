@@ -6,8 +6,9 @@
     <title>{% block title %}Skincare With Happy{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
     {% block styles %}{% endblock %}
-
-
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/catalog.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/content-pages.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/footer.css') }}">
 </head>
 <body>
 
@@ -45,23 +46,7 @@
     {% block content %}{% endblock %}
 </main>
 
-<footer>
-    <div class="footer-logo">
-        <img src="/static/img/logo.png" alt="Skincare With Happy Logo">
-        <span>SkincareWithHappy</span>
-        <small>Gentle care. Calm, Clear & Visible glow. Confident skin!</small>
-    </div>
-
-    <div>
-        <a href="/shop">Shop</a>
-        <a href="/learn">Learn</a>
-        <a href="/about">About</a>
-    </div>
-
-    <div>
-        <p>Subscribe for skincare education</p>
-    </div>
-</footer>
+{% include "partials/footer.html" %}
 <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 
 </body>

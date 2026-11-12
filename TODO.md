@@ -51,6 +51,19 @@
 - [x] Add and validate the customer-account database migration.
 - [ ] Add email verification and password recovery before relying on accounts for sensitive ownership claims.
 
+## Storefront catalog, images, and footer
+- [x] Add nullable product image references and a migration assigning original built-in illustrations only to known seeded products with no existing image.
+- [x] Add separate optional S3-compatible product-image storage with content validation, WebP normalization, generated object keys, and safe replacement/removal ordering.
+- [x] Add authenticated, CSRF-protected admin image upload, preview, replacement, and removal controls.
+- [x] Replace hard-coded homepage and catalog products with database-backed listings and shared responsive product cards.
+- [x] Build shop and catalog skin-type filters and category links from the product data.
+- [x] Use the active `product_details.html` route template and remove unused conflicting product-detail and filter templates.
+- [x] Replace the shared footer across storefront and information pages; show contact and social links only when configured.
+- [x] Keep newsletter subscriptions clearly unavailable until a real subscription workflow exists.
+- [x] Add product image validation, admin storage lifecycle, catalog rendering, and legacy migration preservation tests.
+- [ ] Configure a separate public product-image bucket/CDN and credentials in each deployment environment before enabling uploads.
+- [ ] Apply migration `20261114_product_images` to intended deployment databases after verifying the target and backup.
+
 ## Second-round security and migration corrections
 - [x] Require a unique, sufficiently long production `SECRET_KEY`; reject missing and known insecure values without logging the secret.
 - [x] Make online Alembic migrations use `DIRECT_DATABASE_URL`, with an intentional `DATABASE_URL` fallback, and normalize conventional PostgreSQL URLs to Psycopg 3.
@@ -58,7 +71,7 @@
 - [x] Add temporary SQLite upgrade tests for both the initial legacy baseline and the historical `db.create_all()` schema, including data preservation and migration preflight failure behavior.
 - [x] Preserve offline Alembic SQL generation and warn that offline output cannot run schema checks or the money preflight.
 - [x] Document the tested legacy baseline, the manual backup/rehearsal procedure, and PostgreSQL test setup in `README.md`.
-- [x] Run the complete local suite: 37 passed, 1 skipped (38 total); the opt-in PostgreSQL migration test was skipped because no disposable PostgreSQL database was configured.
+- [x] Run the complete local suite after the migration corrections: 50 passed, 1 skipped (51 total); the opt-in PostgreSQL migration test was skipped because no disposable PostgreSQL database was configured.
 - [ ] Run the fresh PostgreSQL migration test against a disposable PostgreSQL database; it has not been run unless explicitly configured.
 - [ ] Rehearse the legacy migration procedure on a restorable copy of each real database before applying migrations to that database.
 - [ ] Apply pending migrations to intended deployment databases only after reviewing the data preflight and verifying the direct migration connection.

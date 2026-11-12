@@ -1,5 +1,7 @@
 import os
+import re
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from dotenv import load_dotenv
 from sqlalchemy.engine import make_url
@@ -30,6 +32,44 @@ RECEIPT_STORAGE_ENDPOINT_URL = _read_setting("RECEIPT_STORAGE_ENDPOINT_URL")
 RECEIPT_STORAGE_ACCESS_KEY_ID = _read_setting("RECEIPT_STORAGE_ACCESS_KEY_ID")
 RECEIPT_STORAGE_SECRET_ACCESS_KEY = _read_setting("RECEIPT_STORAGE_SECRET_ACCESS_KEY")
 MAX_RECEIPT_SIZE_BYTES = 5 * 1024 * 1024
+
+PRODUCT_IMAGE_STORAGE_BUCKET = _read_setting("PRODUCT_IMAGE_STORAGE_BUCKET")
+PRODUCT_IMAGE_STORAGE_REGION = _read_setting("PRODUCT_IMAGE_STORAGE_REGION")
+PRODUCT_IMAGE_STORAGE_ENDPOINT_URL = _read_setting("PRODUCT_IMAGE_STORAGE_ENDPOINT_URL")
+PRODUCT_IMAGE_STORAGE_ACCESS_KEY_ID = _read_setting("PRODUCT_IMAGE_STORAGE_ACCESS_KEY_ID")
+PRODUCT_IMAGE_STORAGE_SECRET_ACCESS_KEY = _read_setting("PRODUCT_IMAGE_STORAGE_SECRET_ACCESS_KEY")
+PRODUCT_IMAGE_STORAGE_PUBLIC_BASE_URL = _read_setting("PRODUCT_IMAGE_STORAGE_PUBLIC_BASE_URL")
+MAX_PRODUCT_IMAGE_SIZE_BYTES = 4 * 1024 * 1024
+
+
+def _read_public_https_url(name):
+    value = _read_setting(name)
+    if not value:
+        return ""
+    parsed = urlsplit(value)
+    if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password:
+        return ""
+    return value.rstrip("/")
+
+
+FOOTER_SOCIAL_LINKS = tuple(
+    (label, url)
+    for label, variable in (
+        ("Instagram", "SOCIAL_INSTAGRAM_URL"),
+        ("TikTok", "SOCIAL_TIKTOK_URL"),
+        ("Facebook", "SOCIAL_FACEBOOK_URL"),
+    )
+    if (url := _read_public_https_url(variable))
+)
+FOOTER_CONTACT_EMAIL = _read_setting("CONTACT_EMAIL")
+if FOOTER_CONTACT_EMAIL and not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", FOOTER_CONTACT_EMAIL):
+    FOOTER_CONTACT_EMAIL = ""
+_contact_phone = _read_setting("CONTACT_PHONE")
+FOOTER_CONTACT_PHONE = (
+    re.sub(r"[\s().-]", "", _contact_phone)
+    if _contact_phone and re.fullmatch(r"[+0-9\s().-]+", _contact_phone)
+    else ""
+)
 
 
 def normalize_postgres_url(url):

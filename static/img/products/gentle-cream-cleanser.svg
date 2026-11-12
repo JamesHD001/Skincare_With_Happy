@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 752" role="img" aria-labelledby="title">
+  <title id="title">Illustration of Gentle Cream Cleanser</title>
+  <defs>
+    <linearGradient id="bg" x2="1" y2="1"><stop stop-color="#e5eee7"/><stop offset="1" stop-color="#dcebe8"/></linearGradient>
+    <linearGradient id="tube" x2="1"><stop stop-color="#e9f1e8"/><stop offset=".52" stop-color="#fffdf5"/><stop offset="1" stop-color="#c5dace"/></linearGradient>
+  </defs>
+  <rect width="640" height="752" fill="url(#bg)"/>
+  <circle cx="150" cy="165" r="82" fill="#fff" opacity=".4"/>
+  <path d="M225 190h190l-16 370q-2 42-42 42h-74q-40 0-42-42z" fill="url(#tube)" stroke="#fff" stroke-width="8"/>
+  <path d="M274 602h92v47q0 12-12 12h-68q-12 0-12-12z" fill="#537365"/>
+  <path d="M247 254q73 26 146 0" fill="none" stroke="#c1d5ca" stroke-width="4"/>
+  <text x="320" y="340" text-anchor="middle" fill="#345246" font-family="Georgia,serif" font-size="17" letter-spacing="3">HAPPY SKIN</text>
+  <text x="320" y="395" text-anchor="middle" fill="#345246" font-family="Georgia,serif" font-size="22">GENTLE CREAM</text>
+  <text x="320" y="426" text-anchor="middle" fill="#547468" font-family="Arial,sans-serif" font-size="15" letter-spacing="2">CLEANSER</text>
+  <text x="320" y="468" text-anchor="middle" fill="#71877d" font-family="Arial,sans-serif" font-size="13">Comforting daily cleanse</text>
+  <text x="320" y="495" text-anchor="middle" fill="#71877d" font-family="Arial,sans-serif" font-size="12">150 ml</text>
+</svg>

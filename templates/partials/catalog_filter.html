@@ -1,0 +1,12 @@
+<form class="catalog-filter" method="get" action="{{ url_for(request.endpoint) }}">
+    <label for="skin-type-filter">Filter by skin type</label>
+    <select id="skin-type-filter" name="type">
+        <option value="">All skin types</option>
+        {% for value in skin_types %}
+            {% if value != "all" %}
+                <option value="{{ value }}" {% if skin_type == value %}selected{% endif %}>{{ value|title }}</option>
+            {% endif %}
+        {% endfor %}
+    </select>
+    <button type="submit">Filter</button>
+</form>

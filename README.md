@@ -12,12 +12,13 @@ SkinCareWithHappy is a Flask-based skincare storefront project. It provides a we
 - **Payments:** Manual transfer/OPay submission with receipt and reference review by an administrator
 - **Customer accounts:** CSRF-protected sign-up/sign-in, guest checkout, and signed-in order history
 - **Receipt storage:** Private S3-compatible storage; receipts are not served from the public static directory
+- **Product images:** Optional, separate S3-compatible public storage; seeded products use original local illustrations
 - **Configuration:** `python-dotenv` and environment variables
 - **PostgreSQL target:** Neon PostgreSQL
 
 ## Current application areas
 
-The Flask application currently defines routes for:
+The Flask application defines routes for:
 
 - Home, shop, about, contact, and skincare learning pages
 - Product listing and skin-type filtering
@@ -26,7 +27,7 @@ The Flask application currently defines routes for:
 - Customer sign-up/sign-in and protected account order history
 - Checkout, payment-result pages, and an admin console
 
-Some routes and templates still need to be aligned, and the application has not yet received a complete security and production-readiness review. The presence of a page or helper function does not mean its full workflow is production-ready.
+The home page, shop, and product catalog read products from the database and share responsive product cards. Admins can add, replace, and remove product images when the separate public image storage is configured. The privacy page describes current application behavior; it is not legal advice or a substitute for an operator's compliance review.
 
 ## Repository structure
 
@@ -36,6 +37,7 @@ SkinCare_With_Happy/
 │   ├── app.py             # Flask application and routes
 │   ├── config.py          # Environment-based configuration
 │   ├── models.py          # SQLAlchemy data models
+│   ├── product_image_storage.py # Validated public product-image storage
 │   └── payment.py         # Paystack API helper functions
 ├── static/
 │   ├── css/               # Stylesheets
@@ -125,6 +127,9 @@ Set the values in the project-root `.env` locally; `.env.example` is a template 
 - `DIRECT_DATABASE_URL`: direct PostgreSQL connection preferred for Alembic migrations. Online migrations create a separate Psycopg 3 engine from this URL instead of using the application's pooled engine. If it is absent, migrations intentionally fall back to `DATABASE_URL` (which may be pooled); configure the direct URL for production schema changes.
 - `PAYSTACK_PUBLIC_KEY` and `PAYSTACK_SECRET_KEY`: optional payment-provider configuration.
 - `RECEIPT_STORAGE_BUCKET`, `RECEIPT_STORAGE_REGION`, `RECEIPT_STORAGE_ACCESS_KEY_ID`, and `RECEIPT_STORAGE_SECRET_ACCESS_KEY`: required for manual checkout receipt uploads. `RECEIPT_STORAGE_ENDPOINT_URL` is optional for S3-compatible providers. Configure the bucket to block public access; uploads use server-side AES256 encryption. Checkout fails safely when private storage is not configured.
+- `PRODUCT_IMAGE_STORAGE_BUCKET`, `PRODUCT_IMAGE_STORAGE_REGION`, `PRODUCT_IMAGE_STORAGE_ACCESS_KEY_ID`, `PRODUCT_IMAGE_STORAGE_SECRET_ACCESS_KEY`, and `PRODUCT_IMAGE_STORAGE_PUBLIC_BASE_URL`: optional settings for admin product-image uploads. `PRODUCT_IMAGE_STORAGE_ENDPOINT_URL` is optional for S3-compatible providers. Use a separate bucket and credentials from receipt storage, and expose only product images through a public read policy or CDN; the app does not set public object ACLs. The public base URL must use HTTPS. With storage unset, the site still starts and renders a branded fallback, but uploads fail with an actionable message.
+- `SOCIAL_INSTAGRAM_URL`, `SOCIAL_TIKTOK_URL`, and `SOCIAL_FACEBOOK_URL`: optional HTTPS links shown only when valid values are configured.
+- `CONTACT_EMAIL` and `CONTACT_PHONE`: optional contact details shown only when valid values are configured. The contact page does not claim to send messages if no contact channel is set.
 
 The application does not create database tables or seed products during web requests. Apply migrations explicitly, then seed the catalog:
 
@@ -193,9 +198,23 @@ python scripts/backup_neon_db.py
 
 This exports the current PostgreSQL schema and data to a timestamped SQL file in the `backups/` folder. For a regular production routine, schedule this command via GitHub Actions, Cron, or your hosting provider's task scheduler, and keep a copy of the generated dumps in object storage or another offsite location.
 
+## Product catalog images
+
+The `products.image_key` column stores a stable reference, not image bytes. Migration `20261114_product_images` adds the nullable column and assigns original local SVG illustrations to the four built-in product slugs only when their image reference is null. It does not create, copy, or replace customer-uploaded files. New products seeded by `seed-products` receive those illustrations; rerunning the seed command does not overwrite existing product rows or images.
+
+Admin uploads accept JPEG, PNG, and WebP files up to 4 MB and normalize them to WebP. Images with corrupt contents, unsupported formats, or excessive dimensions are rejected. Generated storage keys are independent of client filenames. Replacements upload the new image before changing the database reference; the prior object is cleaned up only after the database commit. Removing an image clears its database reference before attempting object deletion, so a failed cleanup can leave an orphaned file but cannot leave a product pointing to a missing image. Configure the separate public bucket before allowing uploads. Keep the receipt bucket private and never reuse it for public product images.
+
+Apply the pending product-image migration to the intended database with the existing migration procedure before deploying code that reads `products.image_key`:
+
+```powershell
+flask --app app.app db upgrade
+```
+
+The migration has been exercised against disposable SQLite legacy schemas. It has not been run against the production Neon database as part of this work.
+
 ## Database migration status
 
-The application uses SQLAlchemy models and Alembic migrations for products, orders, payment audit logs, admin profiles, customer accounts, fixed-precision money, and inventory reservations. Apply pending migrations with `flask --app app.app db upgrade` against the intended database; verify the database target and migration results before a production deployment.
+The application uses SQLAlchemy models and Alembic migrations for products and image references, orders, payment audit logs, admin profiles, customer accounts, fixed-precision money, and inventory reservations. Apply pending migrations with `flask --app app.app db upgrade` against the intended database; verify the database target and migration results before a production deployment.
 
 The checkout-hardening migration converts legacy floating-point money values to `Numeric(14, 2)`. Before changing schema, it checks product prices, order totals, and order-item prices. It stops with a row-specific message if it finds non-finite values, values with more than two decimal places, or values outside the supported range; reconcile those rows manually and rerun. Do not bypass this check by rounding production data automatically.
 

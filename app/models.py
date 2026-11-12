@@ -18,6 +18,7 @@ class Product(db.Model):
     price = db.Column(db.Numeric(14, 2), nullable=False)
     description = db.Column(db.Text, nullable=True)
     stock = db.Column(db.Integer, nullable=False, default=0)
+    image_key = db.Column(db.String(255), nullable=True)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
     def __repr__(self) -> str:

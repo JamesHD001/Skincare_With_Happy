@@ -264,7 +264,7 @@ class CheckoutHardeningTests(unittest.TestCase):
             db.drop_all()
             self.assertEqual(db.inspect(db.engine).get_table_names(), [])
 
-        response = self.client.get("/")
+        response = self.client.get("/about")
         self.assertEqual(response.status_code, 200)
         with self.app.app_context():
             self.assertEqual(db.inspect(db.engine).get_table_names(), [])

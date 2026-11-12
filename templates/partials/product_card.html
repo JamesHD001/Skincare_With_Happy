@@ -1,0 +1,33 @@
+<article class="catalog-card">
+    <a class="catalog-card__image-link" href="{{ url_for('product_detail', product_id=product.id) }}">
+        <div class="catalog-card__image">
+            {% set image_url = product_image_url(product.image_key) %}
+            {% if image_url %}
+                <img src="{{ image_url }}" alt="{{ product.name }}" loading="lazy">
+            {% else %}
+                <div class="catalog-card__placeholder" role="img" aria-label="{{ product.name }} image unavailable">
+                    <span>Skincare With Happy</span>
+                </div>
+            {% endif %}
+        </div>
+    </a>
+    <div class="catalog-card__content">
+        <p class="catalog-card__skin-type">{{ product.skin_type|title }} skin</p>
+        <h3><a href="{{ url_for('product_detail', product_id=product.id) }}">{{ product.name }}</a></h3>
+        <p class="catalog-card__description">{{ product.description or "Thoughtful care for your skincare routine." }}</p>
+        <p class="catalog-card__price">{{ product.price|naira }}</p>
+        {% if product.stock > 0 %}
+            <p class="catalog-stock catalog-stock--available">
+                {{ product.stock }} in stock
+            </p>
+            <form class="catalog-card__cart" method="post" action="{{ url_for('add_to_cart') }}">
+                <input type="hidden" name="csrf_token" value="{{ customer_csrf_token }}">
+                <input type="hidden" name="product_id" value="{{ product.id }}">
+                <input type="hidden" name="quantity" value="1">
+                <button class="catalog-button" type="submit">Add to cart</button>
+            </form>
+        {% else %}
+            <p class="catalog-stock catalog-stock--unavailable">Out of stock</p>
+        {% endif %}
+    </div>
+</article>

@@ -17,7 +17,7 @@
             <p>New products are available in the store catalog.</p>
         </div>
     </div>
-    <form class="product-form" method="post" action="{{ url_for('admin_products') }}">
+    <form class="product-form" method="post" enctype="multipart/form-data" action="{{ url_for('admin_products') }}">
         <input type="hidden" name="csrf_token" value="{{ admin_csrf_token }}">
         <label>Product name<input name="name" maxlength="150" required></label>
         <label>Skin type
@@ -33,6 +33,10 @@
         <label>Price (NGN)<input type="number" name="price" min="0.01" step="0.01" required></label>
         <label>Initial stock<input type="number" name="stock" min="0" step="1" required></label>
         <label class="form-wide">Description<textarea name="description" rows="2"></textarea></label>
+        <label class="form-wide">Product image
+            <input type="file" name="image" accept="image/jpeg,image/png,image/webp">
+            <span class="muted-text">Optional. JPEG, PNG, or WebP; maximum 4 MB. Configure public image storage before uploading.</span>
+        </label>
         <div class="form-wide form-submit"><button class="button button-primary" type="submit">Add product</button></div>
     </form>
 </section>
@@ -48,17 +52,28 @@
         <div class="table-wrap">
             <table class="data-table product-table">
                 <thead>
-                    <tr><th>Product</th><th>Skin type</th><th>Price (NGN)</th><th>Stock</th><th>Description</th><th></th></tr>
+                    <tr><th>Product</th><th>Image</th><th>Skin type</th><th>Price (NGN)</th><th>Stock</th><th>Description</th><th></th></tr>
                 </thead>
                 <tbody>
                     {% for product in products %}
                         {% set form_id = "product-form-" ~ product.id %}
                         <tr>
                             <td>
-                                <form id="{{ form_id }}" method="post" action="{{ url_for('admin_edit_product', product_id=product.id) }}">
+                                <form id="{{ form_id }}" method="post" enctype="multipart/form-data" action="{{ url_for('admin_edit_product', product_id=product.id) }}">
                                     <input type="hidden" name="csrf_token" value="{{ admin_csrf_token }}">
                                 </form>
                                 <input form="{{ form_id }}" class="table-input product-name-input" name="name" value="{{ product.name }}" maxlength="150" aria-label="Name for {{ product.name }}" required>
+                            </td>
+                            <td>
+                                <div class="product-image-cell">
+                                    {% set image_url = product_image_url(product.image_key) %}
+                                    {% if image_url %}
+                                        <img class="product-image-preview" src="{{ image_url }}" alt="{{ product.name }}">
+                                    {% else %}
+                                        <span class="muted-text">No image</span>
+                                    {% endif %}
+                                    <input form="{{ form_id }}" class="table-input product-image-upload" type="file" name="image" accept="image/jpeg,image/png,image/webp" aria-label="Replace image for {{ product.name }}">
+                                </div>
                             </td>
                             <td>
                                 <select form="{{ form_id }}" class="table-input" name="skin_type" aria-label="Skin type for {{ product.name }}">
@@ -70,7 +85,12 @@
                             <td><input form="{{ form_id }}" class="table-input short-input" type="number" name="price" value="{{ "%.2f"|format(product.price) }}" min="0.01" step="0.01" aria-label="Price for {{ product.name }}" required></td>
                             <td><input form="{{ form_id }}" class="table-input short-input" type="number" name="stock" value="{{ product.stock }}" min="0" step="1" aria-label="Stock for {{ product.name }}" required></td>
                             <td><input form="{{ form_id }}" class="table-input description-input" name="description" value="{{ product.description or '' }}" aria-label="Description for {{ product.name }}"></td>
-                            <td><button class="button button-secondary" type="submit" form="{{ form_id }}">Save</button></td>
+                            <td class="product-image-actions">
+                                <button class="button button-primary" type="submit" name="image_action" value="save" form="{{ form_id }}">Save</button>
+                                {% if product.image_key %}
+                                    <button class="button button-secondary" type="submit" name="image_action" value="remove" form="{{ form_id }}">Remove image</button>
+                                {% endif %}
+                            </td>
                         </tr>
                     {% endfor %}
                 </tbody>
