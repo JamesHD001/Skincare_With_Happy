@@ -26,14 +26,22 @@
         <a href="{{ url_for('learn') }}">Learn</a>
         <a href="{{ url_for('about') }}">About</a>
         <a href="{{ url_for('contact') }}">Contact</a>
-        <a href="{{ url_for('cart') }}" class="nav-btn mobile-only">Account</a>
     </nav>
 
-    <a href="/account" class="nav-btn desktop-only">Account</a>
+    <a href="{{ url_for('account') }}" class="nav-btn">Account</a>
     
 </header>
 
 <main>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="site-flash-stack" aria-live="polite">
+                {% for category, message in messages %}
+                    <div class="site-flash site-flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
     {% block content %}{% endblock %}
 </main>
 

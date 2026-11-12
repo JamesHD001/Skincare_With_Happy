@@ -1,0 +1,83 @@
+{% extends "admin_base.html" %}
+{% block title %}Products | Skincare With Happy Admin{% endblock %}
+{% block page_title %}Products{% endblock %}
+
+{% block admin_content %}
+<section class="page-intro">
+    <div>
+        <h2>Product catalog</h2>
+        <p>Add skincare essentials and keep pricing and stock information up to date.</p>
+    </div>
+</section>
+
+<section class="panel add-product-panel">
+    <div class="panel-heading">
+        <div>
+            <h2>Add a product</h2>
+            <p>New products are available in the store catalog.</p>
+        </div>
+    </div>
+    <form class="product-form" method="post" action="{{ url_for('admin_products') }}">
+        <input type="hidden" name="csrf_token" value="{{ admin_csrf_token }}">
+        <label>Product name<input name="name" maxlength="150" required></label>
+        <label>Skin type
+            <select name="skin_type" required>
+                <option value="all">All skin types</option>
+                <option value="oily">Oily</option>
+                <option value="dry">Dry</option>
+                <option value="combination">Combination</option>
+                <option value="normal">Normal</option>
+                <option value="sensitive">Sensitive</option>
+            </select>
+        </label>
+        <label>Price (NGN)<input type="number" name="price" min="0.01" step="0.01" required></label>
+        <label>Initial stock<input type="number" name="stock" min="0" step="1" required></label>
+        <label class="form-wide">Description<textarea name="description" rows="2"></textarea></label>
+        <div class="form-wide form-submit"><button class="button button-primary" type="submit">Add product</button></div>
+    </form>
+</section>
+
+<section class="panel">
+    <div class="panel-heading">
+        <div>
+            <h2>Current products</h2>
+            <p>{{ products|length }} products in your catalog</p>
+        </div>
+    </div>
+    {% if products %}
+        <div class="table-wrap">
+            <table class="data-table product-table">
+                <thead>
+                    <tr><th>Product</th><th>Skin type</th><th>Price (NGN)</th><th>Stock</th><th>Description</th><th></th></tr>
+                </thead>
+                <tbody>
+                    {% for product in products %}
+                        {% set form_id = "product-form-" ~ product.id %}
+                        <tr>
+                            <td>
+                                <form id="{{ form_id }}" method="post" action="{{ url_for('admin_edit_product', product_id=product.id) }}">
+                                    <input type="hidden" name="csrf_token" value="{{ admin_csrf_token }}">
+                                </form>
+                                <input form="{{ form_id }}" class="table-input product-name-input" name="name" value="{{ product.name }}" maxlength="150" aria-label="Name for {{ product.name }}" required>
+                            </td>
+                            <td>
+                                <select form="{{ form_id }}" class="table-input" name="skin_type" aria-label="Skin type for {{ product.name }}">
+                                    {% for skin_type in ["all", "oily", "dry", "combination", "normal", "sensitive"] %}
+                                        <option value="{{ skin_type }}" {% if product.skin_type == skin_type %}selected{% endif %}>{{ skin_type|title }}</option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                            <td><input form="{{ form_id }}" class="table-input short-input" type="number" name="price" value="{{ "%.2f"|format(product.price) }}" min="0.01" step="0.01" aria-label="Price for {{ product.name }}" required></td>
+                            <td><input form="{{ form_id }}" class="table-input short-input" type="number" name="stock" value="{{ product.stock }}" min="0" step="1" aria-label="Stock for {{ product.name }}" required></td>
+                            <td><input form="{{ form_id }}" class="table-input description-input" name="description" value="{{ product.description or '' }}" aria-label="Description for {{ product.name }}"></td>
+                            <td><button class="button button-secondary" type="submit" form="{{ form_id }}">Save</button></td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="empty-state"><strong>No products yet</strong><span>Add your first product above.</span></div>
+    {% endif %}
+</section>
+{% endblock %}

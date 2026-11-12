@@ -1,0 +1,84 @@
+{% extends "admin_base.html" %}
+{% block title %}Orders | Skincare With Happy Admin{% endblock %}
+{% block page_title %}Orders & payments{% endblock %}
+
+{% block admin_content %}
+<section class="page-intro">
+    <div>
+        <h2>Order management</h2>
+        <p>Review payment evidence and keep payment and fulfillment status in sync.</p>
+    </div>
+    <form class="filter-form" method="get">
+        <label class="sr-only" for="payment-status">Filter by payment status</label>
+        <select id="payment-status" name="payment_status">
+            <option value="">All payment statuses</option>
+            {% for status in ["awaiting_verification", "paid", "pending", "rejected"] %}
+                <option value="{{ status }}" {% if payment_status == status %}selected{% endif %}>{{ status|replace("_", " ")|title }}</option>
+            {% endfor %}
+        </select>
+        <button class="button button-secondary" type="submit">Filter</button>
+    </form>
+</section>
+
+<section class="panel">
+    {% if orders %}
+        <div class="table-wrap">
+            <table class="data-table orders-table">
+                <thead>
+                    <tr>
+                        <th>Order</th>
+                        <th>Customer</th>
+                        <th>Items</th>
+                        <th>Total</th>
+                        <th>Payment / reference</th>
+                        <th>Fulfillment</th>
+                        <th>Submitted</th>
+                        <th>Review</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in orders %}
+                        <tr>
+                            <td><strong>#{{ order.id }}</strong></td>
+                            <td>
+                                <strong>{{ order.customer_name }}</strong>
+                                <small>{{ order.user_email }}</small>
+                                {% if order.phone_number %}<small>{{ order.phone_number }}</small>{% endif %}
+                            </td>
+                            <td>{{ order.items|length }}</td>
+                            <td>{{ order.total_amount|naira }}</td>
+                            <td>
+                                <span class="status-pill status-{{ order.payment_status|replace('_', '-') }}">{{ order.payment_status|replace('_', ' ')|title }}</span>
+                                <small>{{ order.payment_reference or "No reference" }}</small>
+                                {% if order.receipt_file and order.receipt_file.startswith("/static/uploads/payments/") %}
+                                    <a class="table-link" href="{{ order.receipt_file }}" target="_blank" rel="noopener noreferrer">View receipt</a>
+                                {% endif %}
+                            </td>
+                            <td>{{ order.fulfillment_status|replace("_", " ")|title }}</td>
+                            <td>{{ order.created_at.strftime("%b %d, %Y") }}</td>
+                            <td>
+                                {% if order.payment_status == "awaiting_verification" %}
+                                    <div class="review-actions">
+                                        <form method="post" action="{{ url_for('verify_order', order_id=order.id) }}">
+                                            <input type="hidden" name="csrf_token" value="{{ admin_csrf_token }}">
+                                            <button class="button button-approve" type="submit" name="decision" value="approve">Approve</button>
+                                        </form>
+                                        <form method="post" action="{{ url_for('verify_order', order_id=order.id) }}">
+                                            <input type="hidden" name="csrf_token" value="{{ admin_csrf_token }}">
+                                            <button class="button button-reject" type="submit" name="decision" value="reject">Reject</button>
+                                        </form>
+                                    </div>
+                                {% else %}
+                                    <span class="muted-text">Reviewed</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="empty-state"><strong>No matching orders</strong><span>Try another payment status or check back when orders arrive.</span></div>
+    {% endif %}
+</section>
+{% endblock %}

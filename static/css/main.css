@@ -80,7 +80,8 @@ nav a {
     position: relative;
 }
 
-nav a::after {
+nav a::after,
+.nav-btn::after {
     content: "";
     position: absolute;
     left: 0;
@@ -91,7 +92,8 @@ nav a::after {
     transition: width 0.3s ease;
 }
 
-nav a:hover::after {
+nav a:hover::after,
+.nav-btn:hover::after {
     width: 100%;
 }
 
@@ -102,6 +104,35 @@ nav a:hover::after {
     border-radius: 6px;
     text-decoration: none;
     font-size: 14px;
+    display: inline-block;
+    position: relative;
+}
+
+.site-flash-stack {
+    display: grid;
+    gap: 8px;
+    width: min(100% - 40px, 760px);
+    margin: 18px auto 0;
+}
+
+.site-flash {
+    padding: 11px 14px;
+    border: 1px solid #dfe5e9;
+    border-radius: 8px;
+    background: #fff;
+    font-size: 13px;
+}
+
+.site-flash-success {
+    border-color: #b7dfc9;
+    color: #226b4c;
+    background: #eff8f2;
+}
+
+.site-flash-error {
+    border-color: #f0c6c9;
+    color: #963c46;
+    background: #fff2f2;
 }
 
 /* =========================
@@ -164,7 +195,25 @@ footer a:hover {
 /* Mobile overrides (≤768px) */
 @media (max-width: 768px) {
     header {
-        padding: 16px 20px;
+        gap: 10px;
+        padding: 12px 14px;
+    }
+
+    .logo {
+        gap: 6px;
+        flex: 1;
+        font-size: 15px;
+        white-space: nowrap;
+    }
+
+    .logo img {
+        height: 32px;
+    }
+
+    header > .nav-btn {
+        flex: 0 0 auto;
+        padding: 7px 10px;
+        font-size: 12px;
     }
 
     nav {
@@ -190,10 +239,6 @@ footer a:hover {
 
     .hamburger {
         display: block;
-    }
-
-    .desktop-only {
-        display: none;
     }
 
     .mobile-only {

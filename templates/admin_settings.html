@@ -1,0 +1,81 @@
+{% extends "admin_base.html" %}
+{% block title %}Settings | Skincare With Happy Admin{% endblock %}
+{% block page_title %}Admin settings{% endblock %}
+
+{% block admin_content %}
+<section class="page-intro">
+    <div>
+        <h2>Personalize your admin profile</h2>
+        <p>These details are stored with your admin account and do not change your storefront customer profile.</p>
+    </div>
+</section>
+
+<div class="settings-grid">
+    <section class="panel settings-panel">
+        <div class="panel-heading">
+            <div>
+                <h2>Profile information</h2>
+                <p>Choose how your name appears in the admin console.</p>
+            </div>
+            <span class="settings-avatar">{{ profile.display_name[:1]|upper }}</span>
+        </div>
+        <form class="settings-form" method="post" action="{{ url_for('admin_settings') }}">
+            <input type="hidden" name="csrf_token" value="{{ admin_csrf_token }}">
+            <label>Display name
+                <input name="display_name" maxlength="150" value="{{ profile.display_name }}" autocomplete="name" required>
+            </label>
+            <label>Contact email
+                <input type="email" name="email" maxlength="254" value="{{ profile.email or '' }}" autocomplete="email">
+            </label>
+            <label>Phone number
+                <input type="tel" name="phone" maxlength="40" value="{{ profile.phone or '' }}" autocomplete="tel">
+            </label>
+            <label>Short bio
+                <textarea name="bio" maxlength="500" rows="4" placeholder="A little about you">{{ profile.bio or '' }}</textarea>
+            </label>
+            <div class="settings-actions">
+                <button class="button button-primary" type="submit">Save profile</button>
+            </div>
+        </form>
+    </section>
+
+    <div class="settings-side">
+        <section class="panel settings-panel">
+            <div class="panel-heading">
+                <div>
+                    <h2>Login details</h2>
+                    <p>Your username remains managed in the environment.</p>
+                </div>
+            </div>
+            <label class="settings-label" for="admin-username">Admin username</label>
+            <input id="admin-username" class="readonly-input" value="{{ session.get('admin_username', '') }}" readonly>
+            <p class="settings-note">To change the username, update <code>ADMIN_USERNAME</code> in the project-root <code>.env</code> or Vercel environment settings.</p>
+        </section>
+
+        <section class="panel settings-panel">
+            <div class="panel-heading">
+                <div>
+                    <h2>Change password</h2>
+                    <p>Use a unique password with at least 12 characters.</p>
+                </div>
+            </div>
+            <form class="settings-form password-form" method="post" action="{{ url_for('admin_change_password') }}">
+                <input type="hidden" name="csrf_token" value="{{ admin_csrf_token }}">
+                <label>Current password
+                    <input type="password" name="current_password" autocomplete="current-password" required>
+                </label>
+                <label>New password
+                    <input type="password" name="new_password" minlength="12" maxlength="256" autocomplete="new-password" required>
+                </label>
+                <label>Confirm new password
+                    <input type="password" name="confirm_password" minlength="12" maxlength="256" autocomplete="new-password" required>
+                </label>
+                <p class="settings-note">After you change it, the password hash in the database becomes the login authority; the environment password is used only for the initial setup or reset.</p>
+                <div class="settings-actions">
+                    <button class="button button-primary" type="submit">Update password</button>
+                </div>
+            </form>
+        </section>
+    </div>
+</div>
+{% endblock %}

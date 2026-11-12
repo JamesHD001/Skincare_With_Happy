@@ -1,25 +1,48 @@
 import os
+from pathlib import Path
 
 from dotenv import load_dotenv
 
-# Load local environment variables before reading application configuration.
-load_dotenv()
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+ENV_FILE = PROJECT_ROOT / ".env"
 
-PAYSTACK_PUBLIC_KEY = os.getenv("PAYSTACK_PUBLIC_KEY", "")
-PAYSTACK_SECRET_KEY = os.getenv("PAYSTACK_SECRET_KEY", "")
+# Load only the project-root .env; .env.example is a template and is never read.
+load_dotenv(ENV_FILE, override=False)
+
+
+def _read_setting(*names, default=""):
+    for name in names:
+        value = os.getenv(name)
+        if value is not None and value.strip():
+            return value.strip()
+    return default
+
+
+PAYSTACK_PUBLIC_KEY = _read_setting("PAYSTACK_PUBLIC_KEY")
+PAYSTACK_SECRET_KEY = _read_setting("PAYSTACK_SECRET_KEY")
+ADMIN_USERNAME = _read_setting("ADMIN_USERNAME")
+ADMIN_PASSWORD = _read_setting("ADMIN_PASSWORD")
 
 # Neon PostgreSQL configuration.
-# DATABASE_URL should use Neon's pooled connection string for normal app traffic.
-# DIRECT_DATABASE_URL is reserved for schema migrations and administrative tasks.
-DATABASE_URL = os.getenv("DATABASE_URL", "")
-DIRECT_DATABASE_URL = os.getenv("DIRECT_DATABASE_URL", "")
+# DATABASE_URL uses the pooled connection string for app traffic.
+# DIRECT_DATABASE_URL is reserved for migrations and admin tasks.
+DATABASE_URL = _read_setting("DATABASE_URL")
+DIRECT_DATABASE_URL = _read_setting("DIRECT_DATABASE_URL")
 
-# SQLAlchemy can use this URI once the application is migrated from sqlite3.
-# The current application routes still use the legacy SQLite helper in app.py.
-SQLALCHEMY_DATABASE_URI = DATABASE_URL or "sqlite:///database.db"
+# The application gracefully falls back to SQLite for local development if the
+# PostgreSQL environment variables are not defined yet.
+SQLITE_DATABASE_PATH = _read_setting("SQLITE_DATABASE_PATH", default="database.db")
+raw_database_url = DATABASE_URL or DIRECT_DATABASE_URL or f"sqlite:///{SQLITE_DATABASE_PATH}"
+if raw_database_url.startswith("postgresql://"):
+    raw_database_url = raw_database_url.replace("postgresql://", "postgresql+psycopg://", 1)
+SQLALCHEMY_DATABASE_URI = raw_database_url
 
-# Keep the existing SQLite path available during the staged database migration.
-DATABASE = os.getenv("SQLITE_DATABASE_PATH", "database.db")
+# Keep the legacy SQLite path available for existing scripts and local debugging.
+DATABASE = SQLITE_DATABASE_PATH
 
 # Configure a stable secret in the local .env and hosting environment before deployment.
-SECRET_KEY = os.getenv("SECRET_KEY") or os.urandom(24)
+SECRET_KEY = _read_setting("SECRET_KEY", default="skincare-with-happy-dev-secret")
+
+APP_ENV = _read_setting("APP_ENV", default="development").lower()
+PORT = int(_read_setting("PORT", default="5000"))
+DEBUG = APP_ENV != "production"

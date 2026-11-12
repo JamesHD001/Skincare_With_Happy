@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Admin | Skincare With Happy{% endblock %}</title>
+    <link rel="icon" href="{{ url_for('static', filename='img/logo.png') }}" type="image/png">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+</head>
+<body class="admin-body">
+    <div class="admin-shell">
+        <aside class="admin-sidebar">
+            <a class="admin-brand" href="{{ url_for('admin_dashboard') }}">
+                <img src="{{ url_for('static', filename='img/logo.png') }}" alt="">
+                <span>Happy<span class="brand-accent">.</span><small>STORE ADMIN</small></span>
+            </a>
+
+            <p class="sidebar-label">Workspace</p>
+            <nav class="admin-nav" aria-label="Admin navigation">
+                <a class="{% if active_page == 'dashboard' %}is-active{% endif %}" href="{{ url_for('admin_dashboard') }}">
+                    <span class="nav-icon">⌂</span> Overview
+                </a>
+                <a class="{% if active_page == 'orders' %}is-active{% endif %}" href="{{ url_for('admin_orders') }}">
+                    <span class="nav-icon">▤</span> Orders
+                </a>
+                <a class="{% if active_page == 'products' %}is-active{% endif %}" href="{{ url_for('admin_products') }}">
+                    <span class="nav-icon">✿</span> Products
+                </a>
+                <a class="{% if active_page == 'customers' %}is-active{% endif %}" href="{{ url_for('admin_customers') }}">
+                    <span class="nav-icon">♙</span> Customers
+                </a>
+                <a class="{% if active_page == 'settings' %}is-active{% endif %}" href="{{ url_for('admin_settings') }}">
+                    <span class="nav-icon">⚙</span> Settings
+                </a>
+            </nav>
+
+            <div class="sidebar-bottom">
+                <span class="admin-avatar">{{ (admin_profile.display_name if admin_profile else "A")[:1]|upper }}</span>
+                <span class="admin-user">{{ admin_profile.display_name if admin_profile else "Admin" }}<small>Administrator</small></span>
+                <form action="{{ url_for('admin_logout') }}" method="post">
+                    <input type="hidden" name="csrf_token" value="{{ admin_csrf_token }}">
+                    <button class="logout-icon" type="submit" aria-label="Log out">↗</button>
+                </form>
+            </div>
+        </aside>
+
+        <div class="admin-workspace">
+            <header class="admin-topbar">
+                <div>
+                    <p class="eyebrow">SKINCARE WITH HAPPY <span>/</span> ADMIN</p>
+                    <h1>{% block page_title %}Overview{% endblock %}</h1>
+                </div>
+                <span class="secure-badge"><span></span> Secure admin session</span>
+            </header>
+
+            <main class="admin-content">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <div class="flash-stack" aria-live="polite">
+                            {% for category, message in messages %}
+                                <div class="flash-message flash-{{ category }}">{{ message }}</div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+                {% block admin_content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+</body>
+</html>

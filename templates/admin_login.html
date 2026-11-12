@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin sign in | Skincare With Happy</title>
+    <link rel="icon" href="{{ url_for('static', filename='img/logo.png') }}" type="image/png">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+</head>
+<body class="admin-login-body">
+    <main class="login-card">
+        <a class="login-brand" href="/">
+            <img src="{{ url_for('static', filename='img/logo.png') }}" alt="">
+            <span>Skincare With Happy</span>
+        </a>
+        <p class="eyebrow">STORE ADMINISTRATION</p>
+        <h1>Welcome back</h1>
+        <p class="login-intro">Sign in to manage orders, payments, products, and customers.</p>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-stack" aria-live="polite">
+                    {% for category, message in messages %}
+                        <div class="flash-message flash-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        {% if configured %}
+            <form class="login-form" method="post">
+                <input type="hidden" name="csrf_token" value="{{ admin_csrf_token }}">
+                <label for="username">Username</label>
+                <input id="username" name="username" autocomplete="username" required>
+                <label for="password">Password</label>
+                <input id="password" type="password" name="password" autocomplete="current-password" required>
+                <button class="button button-primary button-full" type="submit">Sign in to dashboard</button>
+            </form>
+        {% else %}
+            <div class="setup-notice">
+                Admin access is disabled until <code>ADMIN_USERNAME</code> and <code>ADMIN_PASSWORD</code>
+                are configured in the environment.
+            </div>
+        {% endif %}
+
+        <a class="back-link" href="/">← Back to storefront</a>
+    </main>
+</body>
+</html>

@@ -115,9 +115,10 @@ macOS/Linux:
 cp .env.example .env
 ```
 
-Set the values in `.env` locally. Never commit `.env` or paste database passwords and payment secrets into source files, screenshots, issues, or chat messages.
+Set the values in the project-root `.env` locally; `.env.example` is a template only and is never loaded by the app. Existing process/Vercel environment variables take precedence. Never commit `.env` or paste database passwords and payment secrets into source files, screenshots, issues, or chat messages.
 
 - `SECRET_KEY`: set a long, random secret for Flask sessions.
+- `ADMIN_USERNAME` and `ADMIN_PASSWORD`: bootstrap credentials for the protected admin console. Use unique credentials and keep them only in local/Vercel environment settings.
 - `DATABASE_URL`: reserved for the Neon pooled PostgreSQL connection.
 - `DIRECT_DATABASE_URL`: reserved for direct database access used by migrations and administrative tasks.
 - `PAYSTACK_PUBLIC_KEY` and `PAYSTACK_SECRET_KEY`: optional payment-provider configuration.
@@ -133,6 +134,44 @@ python app/app.py
 ```
 
 The application currently enables Flask debug mode in its development entry point. Do not use that setting for production deployment.
+
+### 8. Production hosting and environment settings
+
+This project is configured for a Vercel deployment using a serverless Python function. The deployment target is:
+
+- Hosting platform: Vercel
+- Runtime: Python 3.12
+- Entry point: `api/index.py`
+- Framework: Flask app object exported as `app`
+
+Set these environment variables in the Vercel project settings before deployment:
+
+- `APP_ENV=production`
+- `PORT=3000` (Vercel manages this automatically for the runtime; keep the app reading from the environment)
+- `SECRET_KEY=<long random secret>`
+- `DATABASE_URL=<pooled Neon PostgreSQL URL>`
+- `DIRECT_DATABASE_URL=<direct Neon PostgreSQL URL>`
+- `ADMIN_USERNAME=<admin username>`
+- `ADMIN_PASSWORD=<unique long admin password>`
+- `PAYSTACK_PUBLIC_KEY` and `PAYSTACK_SECRET_KEY`
+
+The repository includes a `vercel.json` config to route requests to the Flask app exported from `api/index.py`.
+
+### Admin console
+
+Configure `ADMIN_USERNAME` and `ADMIN_PASSWORD` for the first sign-in to `/admin/login`. Admin dashboard, order/payment review, product management, customer views, and profile settings require an authenticated session. Profile details are stored in the database; the username remains environment-managed. A password changed from Settings is stored as a password hash and becomes the login authority.
+
+Apply database changes with `flask --app app.app db upgrade` against the target database before deploying code that depends on the new schema. Migrations use `DIRECT_DATABASE_URL` when it is set. To reset a changed password to the environment bootstrap value, clear `password_hash` for the configured username in the `admin_profiles` table using a trusted database console. Do not store or paste actual credentials in the repository.
+
+### 9. Database backup routine
+
+Create a local scheduled backup using the Neon direct connection string:
+
+```bash
+python scripts/backup_neon_db.py
+```
+
+This exports the current PostgreSQL schema and data to a timestamped SQL file in the `backups/` folder. For a regular production routine, schedule this command via GitHub Actions, Cron, or your hosting provider's task scheduler, and keep a copy of the generated dumps in object storage or another offsite location.
 
 ## Database migration status
 

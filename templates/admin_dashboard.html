@@ -1,83 +1,108 @@
-{% extends "layout.html" %}
-{% block title %}Admin Dashboard | Skincare With Happy{% endblock %}
+{% extends "admin_base.html" %}
+{% block title %}Overview | Skincare With Happy Admin{% endblock %}
+{% block page_title %}Overview{% endblock %}
 
-{% block styles %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
-{% endblock %}
+{% block admin_content %}
+<section class="page-intro">
+    <div>
+        <h2>Your store at a glance</h2>
+        <p>Track sales, review incoming payments, and keep your skincare range in stock.</p>
+    </div>
+    <a class="button button-primary" href="{{ url_for('admin_orders', payment_status='awaiting_verification') }}">Review payments</a>
+</section>
 
-{% block content %}
-<div class="dashboard">
+<section class="metric-grid" aria-label="Store metrics">
+    <article class="metric-card">
+        <span class="metric-icon icon-blue">▤</span>
+        <p>Total orders</p>
+        <strong>{{ stats.total_orders }}</strong>
+        <small>All customer orders</small>
+    </article>
+    <article class="metric-card">
+        <span class="metric-icon icon-amber">◷</span>
+        <p>Awaiting review</p>
+        <strong>{{ stats.awaiting_verification }}</strong>
+        <small>Manual payments to verify</small>
+    </article>
+    <article class="metric-card">
+        <span class="metric-icon icon-green">₦</span>
+        <p>Verified revenue</p>
+        <strong>{{ stats.paid_revenue|naira }}</strong>
+        <small>From paid orders</small>
+    </article>
+    <article class="metric-card">
+        <span class="metric-icon icon-rose">✿</span>
+        <p>Products</p>
+        <strong>{{ stats.products }}</strong>
+        <small>{{ stats.low_stock }} at or below 5 units</small>
+    </article>
+</section>
 
-    <!-- SIDEBAR -->
-    <aside class="sidebar">
-        <h2>Admin Panel</h2>
-        <a href="#">Dashboard</a>
-        <a href="#">Products</a>
-        <a href="#">Orders</a>
-        <a href="#">Customers</a>
-        <a href="#">Payments</a>
-        <a href="#">Settings</a>
-    </aside>
-
-    <!-- MAIN CONTENT -->
-    <main class="main">
-
-        <div class="topbar">
-            <h1>Dashboard Overview</h1>
-            <button class="logout">Logout</button>
+<section class="dashboard-grid">
+    <article class="panel orders-panel">
+        <div class="panel-heading">
+            <div>
+                <h2>Recent orders</h2>
+                <p>Latest activity from your customers</p>
+            </div>
+            <a class="text-link" href="{{ url_for('admin_orders') }}">View all orders →</a>
         </div>
+        {% if orders %}
+            <div class="table-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Order</th>
+                            <th>Customer</th>
+                            <th>Total</th>
+                            <th>Payment</th>
+                            <th>Date</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in orders %}
+                            <tr>
+                                <td><strong>#{{ order.id }}</strong></td>
+                                <td>
+                                    <strong>{{ order.customer_name }}</strong>
+                                    <small>{{ order.user_email }}</small>
+                                </td>
+                                <td>{{ order.total_amount|naira }}</td>
+                                <td><span class="status-pill status-{{ order.payment_status|replace('_', '-') }}">{{ order.payment_status|replace('_', ' ')|title }}</span></td>
+                                <td>{{ order.created_at.strftime("%b %d, %Y") }}</td>
+                                <td><a class="table-link" href="{{ url_for('admin_orders') }}">Details</a></td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state"><strong>No orders yet</strong><span>New orders will appear here.</span></div>
+        {% endif %}
+    </article>
 
-        <!-- STATS -->
-        <div class="stats">
-            <div class="stat-card">
-                <h3>Total Orders</h3>
-                <p>124</p>
+    <article class="panel inventory-panel">
+        <div class="panel-heading">
+            <div>
+                <h2>Inventory watch</h2>
+                <p>Products running low on stock</p>
             </div>
-            <div class="stat-card">
-                <h3>Paid Orders</h3>
-                <p>118</p>
-            </div>
-            <div class="stat-card">
-                <h3>Total Revenue</h3>
-                <p>$3,420</p>
-            </div>
-            <div class="stat-card">
-                <h3>Products</h3>
-                <p>26</p>
-            </div>
+            <a class="text-link" href="{{ url_for('admin_products') }}">Manage →</a>
         </div>
-
-        <!-- ORDERS TABLE -->
-        <div class="table-box">
-            <h2>Recent Orders</h2>
-            <table>
-                <tr>
-                    <th>Order ID</th>
-                    <th>Customer</th>
-                    <th>Amount</th>
-                    <th>Payment</th>
-                    <th>Status</th>
-                    <th>Action</th>
-                </tr>
-                <tr>
-                    <td>#1023</td>
-                    <td>Jane Doe</td>
-                    <td>$66</td>
-                    <td class="status-paid">Paid</td>
-                    <td>Processing</td>
-                    <td><button class="action-btn">View</button></td>
-                </tr>
-                <tr>
-                    <td>#1024</td>
-                    <td>Mark Smith</td>
-                    <td>$48</td>
-                    <td class="status-pending">Pending</td>
-                    <td>Awaiting Payment</td>
-                    <td><button class="action-btn">View</button></td>
-                </tr>
-            </table>
-        </div>
-
-    </main>
-</div>
+        {% if low_stock_products %}
+            <ul class="inventory-list">
+                {% for product in low_stock_products %}
+                    <li>
+                        <span class="inventory-mark">✿</span>
+                        <span class="inventory-name">{{ product.name }}<small>{{ product.price|naira }}</small></span>
+                        <span class="stock-count {% if product.stock == 0 %}stock-empty{% endif %}">{{ product.stock }} left</span>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <div class="empty-state"><strong>Stock looks healthy</strong><span>No products are at or below 5 units.</span></div>
+        {% endif %}
+    </article>
+</section>
 {% endblock %}
