@@ -2,15 +2,15 @@
 
 SkinCareWithHappy is a Flask-based skincare storefront project. It provides a web interface for browsing skincare products, learning about skincare, viewing product details, managing a shopping cart, and starting a checkout flow.
 
-> **Project status:** Active development. The application is currently built around Flask, Jinja templates, and SQLite. A Neon PostgreSQL foundation has been added, but the application routes have **not yet been migrated** from SQLite to PostgreSQL. Do not treat the PostgreSQL setup as a completed database migration.
+> **Project status:** Active development. The application uses Flask, Jinja templates, SQLAlchemy, and Alembic migrations, with Neon PostgreSQL configuration and a SQLite local-development fallback. The storefront supports manual payment review, a protected admin console, and customer accounts. Vercel is the deployment target.
 
 ## Current technology
 
 - **Backend:** Python and Flask
 - **Templating:** Jinja2
-- **Database in current routes:** SQLite through Python's `sqlite3` module
-- **ORM groundwork:** Flask-SQLAlchemy is listed in the dependencies; model definitions need repair and integration
-- **Payment groundwork:** Paystack helper functions are present, but the checkout flow still needs secure server-side payment initialization and verification
+- **Database:** Flask-SQLAlchemy with Alembic migrations; Neon PostgreSQL is supported
+- **Payments:** Manual transfer/OPay submission with receipt and reference review by an administrator
+- **Customer accounts:** CSRF-protected sign-up/sign-in, guest checkout, and signed-in order history
 - **Configuration:** `python-dotenv` and environment variables
 - **PostgreSQL target:** Neon PostgreSQL
 
@@ -22,8 +22,8 @@ The Flask application currently defines routes for:
 - Product listing and skin-type filtering
 - Product detail pages
 - Shopping cart add, update, and remove actions
-- Checkout and payment-result pages
-- An admin dashboard page
+- Customer sign-up/sign-in and protected account order history
+- Checkout, payment-result pages, and an admin console
 
 Some routes and templates still need to be aligned, and the application has not yet received a complete security and production-readiness review. The presence of a page or helper function does not mean its full workflow is production-ready.
 
@@ -34,7 +34,7 @@ SkinCare_With_Happy/
 ├── app/
 │   ├── app.py             # Flask application and routes
 │   ├── config.py          # Environment-based configuration
-│   ├── models.py          # SQLAlchemy model groundwork
+│   ├── models.py          # SQLAlchemy data models
 │   └── payment.py         # Paystack API helper functions
 ├── static/
 │   ├── css/               # Stylesheets
@@ -119,11 +119,11 @@ Set the values in the project-root `.env` locally; `.env.example` is a template 
 
 - `SECRET_KEY`: set a long, random secret for Flask sessions.
 - `ADMIN_USERNAME` and `ADMIN_PASSWORD`: bootstrap credentials for the protected admin console. Use unique credentials and keep them only in local/Vercel environment settings.
-- `DATABASE_URL`: reserved for the Neon pooled PostgreSQL connection.
-- `DIRECT_DATABASE_URL`: reserved for direct database access used by migrations and administrative tasks.
+- `DATABASE_URL`: Neon pooled PostgreSQL connection; when unset, the app uses the configured local SQLite path.
+- `DIRECT_DATABASE_URL`: direct database connection used by migrations and administrative tasks.
 - `PAYSTACK_PUBLIC_KEY` and `PAYSTACK_SECRET_KEY`: optional payment-provider configuration.
 
-**Important:** the current Flask routes still connect through the SQLite helper in `app/app.py`. Setting `DATABASE_URL` alone does not switch the application to Neon. The SQLite schema/initialization workflow also needs to be documented and standardized before a clean local setup can be considered complete.
+Run `flask --app app.app db upgrade` after configuring the target database and before deploying code that depends on a new schema. The application creates missing tables for local development, but production schema changes should be applied through migrations.
 
 ### 7. Run the application
 
@@ -163,6 +163,12 @@ Configure `ADMIN_USERNAME` and `ADMIN_PASSWORD` for the first sign-in to `/admin
 
 Apply database changes with `flask --app app.app db upgrade` against the target database before deploying code that depends on the new schema. Migrations use `DIRECT_DATABASE_URL` when it is set. To reset a changed password to the environment bootstrap value, clear `password_hash` for the configured username in the `admin_profiles` table using a trusted database console. Do not store or paste actual credentials in the repository.
 
+### Customer accounts
+
+Customers can create an account at `/signup`, sign in at `/signin`, and view orders placed while signed in at `/account`. Passwords are stored as hashes and account forms use CSRF tokens. Checkout remains available to guests; orders placed by signed-in customers are associated with their account. Existing guest orders are not automatically attached to a new account based on email alone.
+
+Apply the customer-account migration with `flask --app app.app db upgrade` before deploying this feature. Email verification and password recovery are not currently provided.
+
 ### 9. Database backup routine
 
 Create a local scheduled backup using the Neon direct connection string:
@@ -175,17 +181,9 @@ This exports the current PostgreSQL schema and data to a timestamped SQL file in
 
 ## Database migration status
 
-The Neon PostgreSQL project and environment-variable placeholders have been prepared. The remaining work includes:
+The application uses SQLAlchemy models and Alembic migrations for products, orders, payment audit logs, admin profiles, and customer accounts. Configure `DATABASE_URL` for Neon PostgreSQL or use the SQLite fallback locally. Apply pending migrations with `flask --app app.app db upgrade`; verify connection values and migration results before a production deployment.
 
-1. Add and pin a PostgreSQL driver.
-2. Repair the SQLAlchemy model definitions.
-3. Configure Flask-SQLAlchemy correctly.
-4. Design and apply database migrations.
-5. Replace SQLite-specific queries and placeholders with PostgreSQL-compatible database access.
-6. Test product, cart, order, and payment-related database operations.
-7. Establish backup and recovery procedures.
-
-Until those steps are complete, SQLite remains the database used by the application routes.
+For a legacy database already populated by `db.create_all()` but missing `alembic_version`, first verify that its tables match the initial migration, then run `flask --app app.app db stamp 20261112_initial` once and `flask --app app.app db upgrade`. Do not stamp a fresh or structurally different database.
 
 ## Payments and security
 

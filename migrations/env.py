@@ -14,7 +14,8 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-config.set_main_option("sqlalchemy.url", DIRECT_DATABASE_URL or SQLALCHEMY_DATABASE_URI)
+migration_url = DIRECT_DATABASE_URL or SQLALCHEMY_DATABASE_URI
+config.set_main_option("sqlalchemy.url", migration_url.replace("%", "%%"))
 
 target_metadata = db.metadata
 

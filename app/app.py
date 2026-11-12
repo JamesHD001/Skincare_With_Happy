@@ -282,7 +282,7 @@ def create_app():
             csrf_token = secrets.token_urlsafe(32)
             session["admin_csrf_token"] = csrf_token
         customer_csrf_token = session.get("customer_csrf_token", "")
-        if request.path in {"/signup", "/signin", "/account"} and not customer_csrf_token:
+        if request.path in {"/signup", "/signin", "/account", "/checkout"} and not customer_csrf_token:
             customer_csrf_token = secrets.token_urlsafe(32)
             session["customer_csrf_token"] = customer_csrf_token
         admin_profile = get_admin_profile() if session.get("admin_authenticated") is True else None
@@ -306,10 +306,16 @@ def create_app():
                 expected_token, submitted_token
             ):
                 abort(400, description="The form expired or its security token is invalid. Reload and try again.")
-        elif request.method == "POST" and request.path in {"/signup", "/signin", "/signout"}:
+        elif request.method == "POST" and request.path in {"/signup", "/signin", "/signout", "/checkout"}:
             expected_token = session.get("customer_csrf_token", "")
-            submitted_token = request.form.get("csrf_token", "")
-            if not expected_token or not submitted_token or not hmac.compare_digest(
+            json_payload = request.get_json(silent=True) if request.is_json else None
+            json_token = json_payload.get("csrf_token", "") if isinstance(json_payload, dict) else ""
+            submitted_token = (
+                request.form.get("csrf_token", "")
+                or request.headers.get("X-CSRF-Token", "")
+                or json_token
+            )
+            if not expected_token or not isinstance(submitted_token, str) or not submitted_token or not hmac.compare_digest(
                 expected_token, submitted_token
             ):
                 abort(400, description="The form expired or its security token is invalid. Reload and try again.")
@@ -356,6 +362,8 @@ def create_app():
 
             if not form_data["full_name"] or len(form_data["full_name"]) > 150:
                 flash("Enter your name (150 characters or fewer).", "error")
+            elif len(email) > 254:
+                flash("Email address must be 254 characters or fewer.", "error")
             elif not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
                 flash("Enter a valid email address.", "error")
             elif len(form_data["phone_number"]) > 40:
@@ -494,7 +502,12 @@ def create_app():
     @app.route("/checkout", methods=["GET", "POST"])
     def checkout():
         if request.method == "GET":
-            return render_template("checkout.html", cart=session.get("cart", []), PAYSTACK_PUBLIC_KEY=PAYSTACK_PUBLIC_KEY)
+            cart_summary = build_cart_summary(session.get("cart", []))
+            return render_template(
+                "checkout.html",
+                cart_summary=cart_summary,
+                customer=get_current_customer(),
+            )
 
         payload = request.get_json(silent=True) or request.form.to_dict()
         raw_cart = payload.get("cart") or session.get("cart", [])

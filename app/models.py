@@ -47,7 +47,7 @@ class Order(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     customer_id = db.Column(db.Integer, db.ForeignKey("customers.id"), nullable=True, index=True)
     customer_name = db.Column(db.String(150), nullable=False)
-    user_email = db.Column(db.String(150), nullable=False)
+    user_email = db.Column(db.String(254), nullable=False)
     phone_number = db.Column(db.String(40), nullable=True)
     total_amount = db.Column(db.Float, nullable=False)
     payment_method = db.Column(db.String(40), nullable=False, default="manual_transfer")

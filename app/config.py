@@ -26,15 +26,19 @@ ADMIN_PASSWORD = _read_setting("ADMIN_PASSWORD")
 # Neon PostgreSQL configuration.
 # DATABASE_URL uses the pooled connection string for app traffic.
 # DIRECT_DATABASE_URL is reserved for migrations and admin tasks.
-DATABASE_URL = _read_setting("DATABASE_URL")
-DIRECT_DATABASE_URL = _read_setting("DIRECT_DATABASE_URL")
+def _normalize_postgres_url(url):
+    if url.startswith("postgresql://"):
+        return url.replace("postgresql://", "postgresql+psycopg://", 1)
+    return url
+
+
+DATABASE_URL = _normalize_postgres_url(_read_setting("DATABASE_URL"))
+DIRECT_DATABASE_URL = _normalize_postgres_url(_read_setting("DIRECT_DATABASE_URL"))
 
 # The application gracefully falls back to SQLite for local development if the
 # PostgreSQL environment variables are not defined yet.
 SQLITE_DATABASE_PATH = _read_setting("SQLITE_DATABASE_PATH", default="database.db")
 raw_database_url = DATABASE_URL or DIRECT_DATABASE_URL or f"sqlite:///{SQLITE_DATABASE_PATH}"
-if raw_database_url.startswith("postgresql://"):
-    raw_database_url = raw_database_url.replace("postgresql://", "postgresql+psycopg://", 1)
 SQLALCHEMY_DATABASE_URI = raw_database_url
 
 # Keep the legacy SQLite path available for existing scripts and local debugging.

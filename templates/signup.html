@@ -1,0 +1,38 @@
+{% extends "layout.html" %}
+
+{% block title %}Create Account | Skincare With Happy{% endblock %}
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/account.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="account-page">
+    <div class="account-card">
+        <p class="account-eyebrow">A happier skincare routine</p>
+        <h1>Create your account</h1>
+        <p class="account-intro">Save your details and keep track of your orders.</p>
+        <form method="post" action="{{ url_for('signup') }}" class="account-form">
+            <input type="hidden" name="csrf_token" value="{{ customer_csrf_token }}">
+            <label for="full_name">Full name</label>
+            <input id="full_name" name="full_name" type="text" maxlength="150" autocomplete="name"
+                   value="{{ form_data.full_name }}" required>
+
+            <label for="email">Email address</label>
+            <input id="email" name="email" type="email" maxlength="254" autocomplete="email"
+                   value="{{ form_data.email }}" required>
+
+            <label for="phone_number">Phone number <span>(optional)</span></label>
+            <input id="phone_number" name="phone_number" type="tel" maxlength="40" autocomplete="tel"
+                   value="{{ form_data.phone_number }}">
+
+            <label for="password">Password</label>
+            <input id="password" name="password" type="password" minlength="12" maxlength="256"
+                   autocomplete="new-password" required>
+            <small>Use at least 12 characters.</small>
+
+            <button type="submit" class="account-submit">Create account</button>
+        </form>
+        <p class="account-switch">Already have an account? <a href="{{ url_for('signin') }}">Sign in</a></p>
+    </div>
+</section>
+{% endblock %}

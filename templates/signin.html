@@ -1,0 +1,29 @@
+{% extends "layout.html" %}
+
+{% block title %}Sign In | Skincare With Happy{% endblock %}
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/account.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="account-page">
+    <div class="account-card">
+        <p class="account-eyebrow">Welcome back</p>
+        <h1>Sign in</h1>
+        <p class="account-intro">Sign in to view your account and order history.</p>
+        <form method="post" action="{{ url_for('signin') }}" class="account-form">
+            <input type="hidden" name="csrf_token" value="{{ customer_csrf_token }}">
+            <label for="email">Email address</label>
+            <input id="email" name="email" type="email" maxlength="254" autocomplete="email"
+                   value="{{ email }}" required>
+
+            <label for="password">Password</label>
+            <input id="password" name="password" type="password" autocomplete="current-password" required>
+
+            <button type="submit" class="account-submit">Sign in</button>
+        </form>
+        <p class="account-switch">New here? <a href="{{ url_for('signup') }}">Create an account</a></p>
+        <p class="account-guest">You can also <a href="{{ url_for('shop') }}">continue shopping as a guest</a>.</p>
+    </div>
+</section>
+{% endblock %}

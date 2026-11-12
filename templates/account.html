@@ -1,0 +1,63 @@
+{% extends "layout.html" %}
+
+{% block title %}My Account | Skincare With Happy{% endblock %}
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/account.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="account-page account-page-wide">
+    <div class="account-heading">
+        <div>
+            <p class="account-eyebrow">Your skincare account</p>
+            <h1>Hello, {{ customer.full_name }}</h1>
+            <p class="account-intro">{{ customer.email }}{% if customer.phone_number %} · {{ customer.phone_number }}{% endif %}</p>
+        </div>
+        <form method="post" action="{{ url_for('signout') }}">
+            <input type="hidden" name="csrf_token" value="{{ customer_csrf_token }}">
+            <button type="submit" class="account-secondary">Sign out</button>
+        </form>
+    </div>
+
+    <div class="orders-panel">
+        <div class="orders-heading">
+            <div>
+                <h2>Your orders</h2>
+                <p>Orders placed while signed in appear here. Guest orders stay separate.</p>
+            </div>
+            <a class="account-link-button" href="{{ url_for('shop') }}">Continue shopping</a>
+        </div>
+
+        {% if orders %}
+            <div class="order-list">
+                {% for order in orders %}
+                    <article class="order-card">
+                        <div class="order-card-heading">
+                            <div>
+                                <h3>Order #{{ order.id }}</h3>
+                                <time datetime="{{ order.created_at.isoformat() }}">{{ order.created_at.strftime("%B %d, %Y") }}</time>
+                            </div>
+                            <strong>{{ order.total_amount|naira }}</strong>
+                        </div>
+                        <ul>
+                            {% for item in order.items %}
+                                <li>{{ item.product.name }} <span>× {{ item.quantity }}</span></li>
+                            {% endfor %}
+                        </ul>
+                        <div class="order-statuses">
+                            <span>Payment: {{ order.payment_status|replace("_", " ")|title }}</span>
+                            <span>Fulfillment: {{ order.fulfillment_status|replace("_", " ")|title }}</span>
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-orders">
+                <h3>No orders yet</h3>
+                <p>When you place an order while signed in, it will show up here.</p>
+                <a href="{{ url_for('shop') }}">Explore the shop</a>
+            </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

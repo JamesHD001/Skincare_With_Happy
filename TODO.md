@@ -31,3 +31,12 @@
 - [x] Add product catalog creation, pricing, and stock editing.
 - [x] Add customer rollup view from order history.
 - [x] Add persistent admin profile personalization and database-backed password changes.
+
+## Customer accounts
+- [x] Add CSRF-protected customer sign-up, sign-in, and sign-out.
+- [x] Store customer passwords as hashes and normalize account email addresses.
+- [x] Add a protected account page with signed-in order history.
+- [x] Associate signed-in checkout orders with the customer while retaining guest checkout.
+- [x] Keep legacy guest orders unassociated unless ownership can be safely verified.
+- [x] Add and validate the customer-account database migration.
+- [ ] Add email verification and password recovery before relying on accounts for sensitive ownership claims.

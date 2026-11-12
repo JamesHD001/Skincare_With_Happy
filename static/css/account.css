@@ -1,0 +1,369 @@
+.account-page {
+    width: min(100% - 32px, 520px);
+    margin: 56px auto 72px;
+}
+
+.account-page-wide {
+    width: min(100% - 40px, 1040px);
+}
+
+.account-card,
+.orders-panel {
+    padding: 32px;
+    border: 1px solid #e8e8e3;
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 8px 26px rgba(31, 41, 55, 0.05);
+}
+
+.account-eyebrow {
+    margin-bottom: 6px;
+    color: #63816d;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.account-card h1,
+.account-heading h1 {
+    color: var(--primary);
+    font-size: clamp(26px, 4vw, 34px);
+    line-height: 1.2;
+}
+
+.account-intro {
+    margin-top: 8px;
+    color: #65706a;
+    font-size: 14px;
+}
+
+.account-form {
+    display: grid;
+    gap: 9px;
+    margin-top: 25px;
+}
+
+.account-form label {
+    margin-top: 7px;
+    color: #26342d;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.account-form label span,
+.account-form small {
+    color: #727b75;
+    font-weight: 400;
+}
+
+.account-form input {
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 12px;
+    border: 1px solid #d5dbd6;
+    border-radius: 7px;
+    background: #fff;
+    color: var(--text-dark);
+    font: inherit;
+}
+
+.account-form input:focus {
+    border-color: #63816d;
+    outline: 3px solid rgba(99, 129, 109, 0.16);
+}
+
+.account-form small {
+    margin-top: -5px;
+    font-size: 12px;
+}
+
+.account-submit,
+.account-secondary,
+.account-link-button {
+    display: inline-flex;
+    min-height: 42px;
+    align-items: center;
+    justify-content: center;
+    padding: 9px 16px;
+    border: 0;
+    border-radius: 7px;
+    background: var(--primary);
+    color: #fff;
+    cursor: pointer;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.account-submit {
+    margin-top: 13px;
+}
+
+.account-submit:hover,
+.account-secondary:hover,
+.account-link-button:hover {
+    background: #29499f;
+}
+
+.account-switch,
+.account-guest {
+    margin-top: 20px;
+    color: #59645d;
+    font-size: 13px;
+}
+
+.account-guest {
+    margin-top: 9px;
+}
+
+.account-switch a,
+.account-guest a,
+.empty-orders a {
+    color: var(--primary);
+    font-weight: 600;
+}
+
+.account-heading,
+.orders-heading,
+.order-card-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.account-heading {
+    margin-bottom: 28px;
+}
+
+.account-heading form {
+    flex: 0 0 auto;
+}
+
+.account-secondary {
+    border: 1px solid #d5dbd6;
+    background: #fff;
+    color: #34423a;
+}
+
+.account-secondary:hover {
+    background: #f3f5f3;
+}
+
+.orders-heading {
+    margin-bottom: 20px;
+}
+
+.orders-heading h2 {
+    color: var(--primary);
+    font-size: 22px;
+}
+
+.orders-heading p,
+.order-card time,
+.empty-orders p {
+    color: #65706a;
+    font-size: 13px;
+}
+
+.order-list {
+    display: grid;
+    gap: 14px;
+}
+
+.order-card {
+    padding: 18px;
+    border: 1px solid #e8e8e3;
+    border-radius: 10px;
+}
+
+.order-card h3 {
+    color: #26342d;
+    font-size: 16px;
+}
+
+.order-card-heading > strong {
+    color: var(--primary);
+}
+
+.order-card ul {
+    display: grid;
+    gap: 4px;
+    margin: 16px 0;
+    padding-left: 18px;
+    color: #46524a;
+    font-size: 13px;
+}
+
+.order-card li span {
+    color: #65706a;
+}
+
+.order-statuses {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.order-statuses span {
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: #f1f4f1;
+    color: #48584d;
+    font-size: 11px;
+    text-transform: capitalize;
+}
+
+.empty-orders {
+    padding: 32px 12px;
+    border: 1px dashed #d5dbd6;
+    border-radius: 10px;
+    text-align: center;
+}
+
+.empty-orders h3 {
+    color: #26342d;
+}
+
+.empty-orders a {
+    display: inline-block;
+    margin-top: 12px;
+}
+
+.checkout-page > h1 {
+    color: var(--primary);
+    font-size: clamp(26px, 4vw, 34px);
+}
+
+.checkout-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) minmax(250px, 0.8fr);
+    align-items: start;
+    gap: 20px;
+    margin-top: 24px;
+}
+
+.checkout-panel {
+    padding: 26px;
+    border: 1px solid #e8e8e3;
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 8px 26px rgba(31, 41, 55, 0.05);
+}
+
+.checkout-panel h2 {
+    margin-bottom: 14px;
+    color: var(--primary);
+    font-size: 19px;
+}
+
+.checkout-panel label {
+    display: block;
+    margin: 14px 0 6px;
+    color: #26342d;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.checkout-panel label span,
+.checkout-help {
+    color: #65706a;
+    font-weight: 400;
+}
+
+.checkout-panel input:not([type="file"]) {
+    width: 100%;
+    min-height: 42px;
+    padding: 9px 11px;
+    border: 1px solid #d5dbd6;
+    border-radius: 7px;
+    font: inherit;
+}
+
+.checkout-panel input[type="file"] {
+    max-width: 100%;
+}
+
+.checkout-signed-in,
+.checkout-help {
+    color: #59645d;
+    font-size: 13px;
+}
+
+.checkout-signed-in a,
+.checkout-back-link {
+    color: var(--primary);
+    font-weight: 600;
+}
+
+.checkout-payment-heading {
+    margin-top: 28px;
+}
+
+.checkout-help {
+    margin: -5px 0 12px;
+}
+
+.checkout-submit {
+    width: 100%;
+}
+
+.checkout-item,
+.checkout-total {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid #ecefeb;
+    color: #46524a;
+    font-size: 13px;
+}
+
+.checkout-item strong {
+    flex: 0 0 auto;
+}
+
+.checkout-total {
+    margin-top: 8px;
+    border: 0;
+    color: var(--primary);
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.checkout-back-link {
+    display: inline-block;
+    margin-top: 16px;
+    font-size: 13px;
+}
+
+.checkout-empty {
+    margin-top: 24px;
+}
+
+@media (max-width: 600px) {
+    .account-page {
+        margin-top: 30px;
+    }
+
+    .account-card,
+    .orders-panel {
+        padding: 22px 18px;
+    }
+
+    .account-heading,
+    .orders-heading {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .checkout-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .checkout-panel {
+        padding: 21px 17px;
+    }
+}
