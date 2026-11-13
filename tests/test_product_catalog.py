@@ -161,6 +161,37 @@ class ProductCatalogTests(unittest.TestCase):
         self.assertIn(b"Direct contact details are not currently published.", contact.data)
         self.assertNotIn(b"/submit-contact-form", contact.data)
 
+    def test_new_product_cannot_be_created_without_an_image(self):
+        self.sign_in()
+
+        response = self.client.post(
+            "/admin/products",
+            data=self.product_form(),
+        )
+        self.assertEqual(response.status_code, 302)
+        products_page = self.client.get("/admin/products")
+        self.assertIn(b"A product image is required before adding a product.", products_page.data)
+        with self.app.app_context():
+            self.assertEqual(Product.query.count(), 4)
+            self.assertIsNone(
+                Product.query.filter_by(slug="calming-daily-lotion").first()
+            )
+
+    def test_new_product_without_image_fails_when_image_storage_is_not_configured(self):
+        self.sign_in()
+        self.app.extensions["product_image_storage"] = None
+
+        response = self.client.post(
+            "/admin/products",
+            data=self.product_form(image=(image_file(), "new.png")),
+            content_type="multipart/form-data",
+        )
+        self.assertEqual(response.status_code, 302)
+        products_page = self.client.get("/admin/products")
+        self.assertIn(b"Product image storage is not configured", products_page.data)
+        with self.app.app_context():
+            self.assertEqual(Product.query.count(), 4)
+
     def test_product_image_upload_is_normalized_and_ignores_client_filename(self):
         self.sign_in()
         response = self.client.post(
