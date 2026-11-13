@@ -34,8 +34,8 @@
         <label>Initial stock<input type="number" name="stock" min="0" step="1" required></label>
         <label class="form-wide">Description<textarea name="description" rows="2"></textarea></label>
         <label class="form-wide">Product image
-            <input type="file" name="image" accept="image/jpeg,image/png,image/webp">
-            <span class="muted-text">Optional. JPEG, PNG, or WebP; maximum 4 MB. Configure public image storage before uploading.</span>
+            <input type="file" name="image" accept="image/jpeg,image/png,image/webp" required>
+            <span class="muted-text">Required. JPEG, PNG, or WebP; maximum 4 MB. Configure public image storage before uploading.</span>
         </label>
         <div class="form-wide form-submit"><button class="button button-primary" type="submit">Add product</button></div>
     </form>
