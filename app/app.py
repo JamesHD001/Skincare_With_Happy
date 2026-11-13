@@ -1238,6 +1238,9 @@ def create_app():
             if image_error:
                 flash(image_error, "error")
                 return redirect(url_for("admin_products"))
+            if not image_key:
+                flash("A product image is required before adding a product.", "error")
+                return redirect(url_for("admin_products"))
 
             product = Product(
                 **values,
