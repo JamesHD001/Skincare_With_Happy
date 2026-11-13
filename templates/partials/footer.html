@@ -15,7 +15,7 @@
             {% endif %}
         </section>
 
-        <nav class="premium-footer__links" aria-label="Shop">
+        <nav class="premium-footer__links" aria-label="Explore">
             <h2>Explore</h2>
             <a href="{{ url_for('shop') }}">Shop all products</a>
             <a href="{{ url_for('products') }}">Product catalog</a>
@@ -28,12 +28,6 @@
             <a href="{{ url_for('contact') }}">Contact</a>
             <a href="{{ url_for('privacy') }}">Privacy policy</a>
             <a href="{{ url_for('account') }}">Your account</a>
-            {% if footer_contact_email %}
-                <a href="mailto:{{ footer_contact_email }}">{{ footer_contact_email }}</a>
-            {% endif %}
-            {% if footer_contact_phone %}
-                <a href="tel:{{ footer_contact_phone }}">{{ footer_contact_phone }}</a>
-            {% endif %}
         </nav>
 
         <section class="premium-footer__newsletter">
@@ -45,11 +39,5 @@
 
     <div class="premium-footer__bottom">
         <span>&copy; {{ current_year }} Skincare With Happy. All rights reserved.</span>
-        <nav aria-label="Footer navigation">
-            <a href="{{ url_for('shop') }}">Shop</a>
-            <a href="{{ url_for('about') }}">About</a>
-            <a href="{{ url_for('contact') }}">Contact</a>
-            <a href="{{ url_for('privacy') }}">Privacy</a>
-        </nav>
     </div>
 </footer>
