@@ -55,6 +55,7 @@
 - [x] Add nullable product image references and a migration assigning original built-in illustrations only to known seeded products with no existing image.
 - [x] Add separate optional S3-compatible product-image storage with content validation, WebP normalization, generated object keys, and safe replacement/removal ordering.
 - [x] Add authenticated, CSRF-protected admin image upload, preview, replacement, and removal controls.
+- [x] Require a valid product image before creating a new catalog product in both the admin form and server-side validation.
 - [x] Replace hard-coded homepage and catalog products with database-backed listings and shared responsive product cards.
 - [x] Build shop and catalog skin-type filters and category links from the product data.
 - [x] Use the active `product_details.html` route template and remove unused conflicting product-detail and filter templates.
