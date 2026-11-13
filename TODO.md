@@ -59,6 +59,8 @@
 - [x] Replace hard-coded homepage and catalog products with database-backed listings and shared responsive product cards.
 - [x] Build shop and catalog skin-type filters and category links from the product data.
 - [x] Use the active `product_details.html` route template and remove unused conflicting product-detail and filter templates.
+- [x] Restore the reference four-column footer layout, forest-green styling, and responsive spacing.
+- [x] Remove repeated Shop, About, Contact, and Privacy links from the footer bottom row; retain the copyright line.
 - [x] Replace the shared footer across storefront and information pages; show contact and social links only when configured.
 - [x] Keep newsletter subscriptions clearly unavailable until a real subscription workflow exists.
 - [x] Add product image validation, admin storage lifecycle, catalog rendering, and legacy migration preservation tests.
