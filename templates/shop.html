@@ -1,21 +1,19 @@
 {% extends "layout.html" %}
-{% block title %}Shop | Skincare With Happy{% endblock %}
+{% block title %}Shop Skincare | Skincare With Happy{% endblock %}
+{% block meta_description %}Explore the Skincare With Happy collection and browse products by skin type.{% endblock %}
 
 {% block styles %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/shop.css') }}">
 {% endblock %}
 
 {% block content %}
-<section class="hero">
-    <div>
-        <h1>Healthy Skin Starts With Understanding</h1>
-        <p>
-            Skincare With Happy is built on trust, education, and clinically guided
-            skincare solutions designed to support your skin’s natural balance.
-        </p>
-        <a class="shop-hero__cta" href="#catalog">Shop products</a>
+<section class="shop-intro">
+    <div class="shop-intro__content">
+        <p class="catalog-eyebrow">The Skincare With Happy collection</p>
+        <h1>Find the care that fits your skin.</h1>
+        <p>Explore our product collection, compare details and discover thoughtful essentials for your routine.</p>
     </div>
-    <div></div>
+    <a class="shop-intro__back" href="{{ url_for('index') }}">← Back to our story</a>
 </section>
 
 <section class="categories catalog-category-links" aria-label="Browse by skin type">
@@ -30,7 +28,7 @@
 <section class="shop-section">
     <div class="catalog-heading" id="catalog">
         <div>
-            <p class="catalog-eyebrow">Our collection</p>
+            <p class="catalog-eyebrow">Explore the collection</p>
             <h2>{% if skin_type %}{{ "All skin types" if skin_type == "all" else skin_type|title ~ " skin" }}{% else %}Shop all products{% endif %}</h2>
         </div>
         {% include "partials/catalog_filter.html" %}
@@ -46,16 +44,16 @@
 
 <section class="trust">
     <div>
-        <h3>Clinically Guided</h3>
-        <p>Formulated with evidence-based ingredients.</p>
+        <h3>Thoughtful discovery</h3>
+        <p>Explore product details and find options for your routine.</p>
     </div>
     <div>
-        <h3>Education First</h3>
-        <p>We help you understand before you buy.</p>
+        <h3>Education first</h3>
+        <p>Learn the basics and make choices with more understanding.</p>
     </div>
     <div>
-        <h3>Payment Before Delivery</h3>
-        <p>Secure and verified online checkout.</p>
+        <h3>Secure checkout</h3>
+        <p>Review your order and follow the available payment instructions.</p>
     </div>
 </section>
 {% endblock %}
