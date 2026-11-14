@@ -97,7 +97,7 @@ DIRECT_DATABASE_URL = normalize_postgres_url(_read_setting("DIRECT_DATABASE_URL"
 
 # The application gracefully falls back to SQLite for local development if the
 # PostgreSQL environment variables are not defined yet.
-SQLITE_DATABASE_PATH = _read_setting("SQLITE_DATABASE_PATH", default="database.db")
+SQLITE_DATABASE_PATH = str(PROJECT_ROOT / "database.db")
 raw_database_url = DATABASE_URL or DIRECT_DATABASE_URL or f"sqlite:///{SQLITE_DATABASE_PATH}"
 SQLALCHEMY_DATABASE_URI = raw_database_url
 MIGRATION_DATABASE_URL = select_migration_database_url(
