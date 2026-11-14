@@ -57,6 +57,7 @@ header.scrolled {
 
 .logo {
     display: flex;
+    text-decoration: none;
     align-items: center;
     gap: 10px;
     font-weight: 600;
