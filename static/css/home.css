@@ -651,3 +651,120 @@
         transition: none;
     }
 }
+
+/* Editorial image carousel */
+.home-hero__image {
+    overflow: hidden;
+    background: #e9e5dc;
+}
+.home-hero__slides,
+.home-hero__slide {
+    position: absolute;
+    inset: 0;
+}
+.home-hero__slide {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 900ms ease, visibility 900ms ease;
+}
+.home-hero__slide.is-active {
+    opacity: 1;
+    visibility: visible;
+}
+.home-hero__slide img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+}
+.home-hero__slide::after {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(0deg, rgba(15, 28, 52, 0.66), transparent 62%);
+    content: "";
+}
+.home-hero__slide-caption {
+    position: absolute;
+    z-index: 1;
+    right: 8%;
+    bottom: 14%;
+    left: 8%;
+    display: grid;
+    gap: 9px;
+    color: #fff;
+}
+.home-hero__slide-caption span {
+    color: #ffd09a;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+}
+.home-hero__slide-caption strong {
+    max-width: 460px;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: clamp(22px, 3vw, 38px);
+    font-weight: 500;
+    line-height: 1.15;
+}
+.home-hero__carousel-controls {
+    position: absolute;
+    z-index: 3;
+    right: 7%;
+    bottom: 5%;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    color: #fff;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+}
+.home-hero__carousel-controls button {
+    width: 34px;
+    height: 34px;
+    border: 1px solid rgba(255,255,255,.7);
+    border-radius: 50%;
+    background: rgba(20,35,60,.25);
+    color: #fff;
+    cursor: pointer;
+    font-size: 22px;
+}
+.home-hero__carousel-controls button:hover {
+    background: var(--home-orange);
+}
+.home-discover-card__skin-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: auto;
+    padding-top: 22px;
+}
+.home-discover-card__skin-links a {
+    padding: 9px 11px;
+    border: 1px solid #dce2ec;
+    color: var(--home-blue);
+    font-size: 11px;
+    font-weight: 750;
+    text-decoration: none;
+}
+.home-discover-card__skin-links a:hover {
+    border-color: var(--home-orange);
+    background: #fff8ef;
+}
+@media (max-width: 680px) {
+    .home-hero__image {
+        inset: 0 0 auto;
+        height: 330px;
+    }
+    .home-hero__slide-caption {
+        bottom: 18%;
+    }
+    .home-hero__carousel-controls {
+        right: 20px;
+        bottom: 14px;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .home-hero__slide {
+        transition: none;
+    }
+}
