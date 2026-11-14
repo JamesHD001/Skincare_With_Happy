@@ -58,6 +58,10 @@ if (heroCarousel) {
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     let activeIndex = 0;
 
+    if (slides.length === 0) {
+        console.warn("Hero carousel has no slides.");
+    }
+
     const showSlide = (index) => {
         activeIndex = (index + slides.length) % slides.length;
         slides.forEach((slide, slideIndex) => {
@@ -70,9 +74,14 @@ if (heroCarousel) {
         });
     };
 
-    showSlide(0);
-    if (!reducedMotion && slides.length > 1) {
-        window.setInterval(() => showSlide(activeIndex + 1), 7000);
+    if (slides.length > 0) {
+        showSlide(0);
+
+        if (slides.length > 1) {
+            window.setInterval(() => {
+                showSlide(activeIndex + 1);
+            }, 7000);
+        }
     }
 }
 
