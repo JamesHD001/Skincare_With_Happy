@@ -99,6 +99,7 @@
 - [x] Rename basket-facing customer copy to Cart.
 - [x] Reorder the mobile header so Cart appears before the hamburger menu.
 - [x] Move the Account link into the navigation menu so it is not shown as a separate mobile header button.
+- [x] Stack the mobile hero carousel above its headline and supporting copy, with clear spacing between sections.
 - [ ] Verify the new landing page and shop locally at desktop, tablet, and mobile widths.
 - [ ] Confirm featured product cards, add-to-cart, product details, account, and checkout still work end to end.
 - [ ] Review editorial image loading and replace temporary remote imagery with approved brand photography when available.
