@@ -1,6 +1,6 @@
 {% extends "layout.html" %}
 
-{% block title %}Shopping Basket | Skincare With Happy{% endblock %}
+{% block title %}Cart | Skincare With Happy{% endblock %}
 {% block styles %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/account.css') }}">
 {% endblock %}
@@ -8,7 +8,7 @@
 {% block content %}
 <section class="account-page account-page-wide checkout-page cart-page">
     <p class="account-eyebrow">Your selections</p>
-    <h1>Your basket</h1>
+    <h1>Your cart</h1>
     {% if cart_summary["items"] %}
         <form class="cart-layout" method="post" action="{{ url_for('update_cart') }}">
             <input type="hidden" name="csrf_token" value="{{ customer_csrf_token }}">
@@ -34,7 +34,7 @@
                                 formmethod="post" name="remove" value="1">Remove</button>
                     </article>
                 {% endfor %}
-                <button class="account-secondary" type="submit">Update basket</button>
+                <button class="account-secondary" type="submit">Update cart</button>
             </section>
             <aside class="checkout-panel checkout-summary">
                 <h2>Order summary</h2>
@@ -52,7 +52,7 @@
         </form>
     {% else %}
         <div class="empty-orders checkout-empty">
-            <h2>Your basket is empty</h2>
+            <h2>Your cart is empty</h2>
             {% if cart_summary.error %}<p>{{ cart_summary.error }}</p>{% endif %}
             <a href="{{ url_for('shop') }}">Browse products</a>
         </div>
