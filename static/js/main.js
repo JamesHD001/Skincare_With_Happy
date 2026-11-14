@@ -50,16 +50,13 @@ if (hamburger && navMenu) {
     });
 }
 
-// Five-slide skincare editorial carousel
+// Automatic five-slide skincare editorial carousel
 const heroCarousel = document.querySelector("[data-hero-carousel]");
 if (heroCarousel) {
     const slides = Array.from(heroCarousel.querySelectorAll(".home-hero__slide"));
-    const status = document.querySelector("[data-hero-status]");
-    const previous = document.querySelector("[data-hero-prev]");
-    const next = document.querySelector("[data-hero-next]");
+    const indicators = Array.from(document.querySelectorAll("[data-hero-indicators] span"));
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     let activeIndex = 0;
-    let rotation;
 
     const showSlide = (index) => {
         activeIndex = (index + slides.length) % slides.length;
@@ -68,23 +65,15 @@ if (heroCarousel) {
             slide.classList.toggle("is-active", active);
             slide.setAttribute("aria-hidden", String(!active));
         });
-        if (status) status.textContent = String(activeIndex + 1).padStart(2, "0") + " / " + String(slides.length).padStart(2, "0");
+        indicators.forEach((indicator, indicatorIndex) => {
+            indicator.classList.toggle("is-active", indicatorIndex === activeIndex);
+        });
     };
-    const stopRotation = () => window.clearInterval(rotation);
-    const startRotation = () => {
-        if (!reducedMotion) {
-            stopRotation();
-            rotation = window.setInterval(() => showSlide(activeIndex + 1), 5500);
-        }
-    };
-    previous?.addEventListener("click", () => { showSlide(activeIndex - 1); startRotation(); });
-    next?.addEventListener("click", () => { showSlide(activeIndex + 1); startRotation(); });
-    heroCarousel.addEventListener("mouseenter", stopRotation);
-    heroCarousel.addEventListener("mouseleave", startRotation);
-    heroCarousel.addEventListener("focusin", stopRotation);
-    heroCarousel.addEventListener("focusout", startRotation);
+
     showSlide(0);
-    startRotation();
+    if (!reducedMotion && slides.length > 1) {
+        window.setInterval(() => showSlide(activeIndex + 1), 7000);
+    }
 }
 
 // Add products in the background and update the shared cart indicator
