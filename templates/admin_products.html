@@ -1,5 +1,6 @@
 {% extends "admin_base.html" %}
 {% block title %}Products | Skincare With Happy Admin{% endblock %}
+
 {% block page_title %}Products{% endblock %}
 
 {% block admin_content %}
@@ -34,9 +35,14 @@
         <label>Initial stock<input type="number" name="stock" min="0" step="1" required></label>
         <label class="form-wide">Description<textarea name="description" rows="2"></textarea></label>
         <label class="form-wide">Product image
-            <input type="file" name="image" accept="image/jpeg,image/png,image/webp" required>
-            <span class="muted-text">Required. JPEG, PNG, or WebP; maximum 4 MB. Configure public image storage before uploading.</span>
+            <input class="product-image-upload" type="file" name="image" accept="image/jpeg,image/png,image/webp" aria-describedby="new-product-image-help new-product-image-status" required>
+            <span class="muted-text" id="new-product-image-help">Required. JPEG, PNG, or WebP; maximum 4 MB.</span>
         </label>
+        <div class="form-wide image-preview-panel" data-image-preview>
+            <img class="image-preview-large" alt="Selected product image preview" hidden>
+            <p class="image-preview-placeholder">Your selected product image will appear here.</p>
+            <p class="image-preview-status muted-text" id="new-product-image-status" aria-live="polite">No image selected yet.</p>
+        </div>
         <div class="form-wide form-submit"><button class="button button-primary" type="submit">Add product</button></div>
     </form>
 </section>
@@ -70,9 +76,11 @@
                                     {% if image_url %}
                                         <img class="product-image-preview" src="{{ image_url }}" alt="{{ product.name }}">
                                     {% else %}
-                                        <span class="muted-text">No image</span>
+                                        <img class="product-image-preview" alt="Selected image for {{ product.name }}" hidden>
+                                        <span class="muted-text product-image-empty">No image</span>
                                     {% endif %}
-                                    <input form="{{ form_id }}" class="table-input product-image-upload" type="file" name="image" accept="image/jpeg,image/png,image/webp" aria-label="Replace image for {{ product.name }}">
+                                    <input form="{{ form_id }}" class="table-input product-image-upload" type="file" name="image" accept="image/jpeg,image/png,image/webp" aria-label="Replace image for {{ product.name }}" aria-describedby="image-status-{{ product.id }}">
+                                    <span class="image-preview-status muted-text" id="image-status-{{ product.id }}" aria-live="polite">Choose a file to preview a replacement.</span>
                                 </div>
                             </td>
                             <td>
@@ -100,4 +108,8 @@
         <div class="empty-state"><strong>No products yet</strong><span>Add your first product above.</span></div>
     {% endif %}
 </section>
+{% endblock %}
+
+{% block page_scripts %}
+<script src="{{ url_for('static', filename='js/admin-product-images.js') }}" defer></script>
 {% endblock %}
