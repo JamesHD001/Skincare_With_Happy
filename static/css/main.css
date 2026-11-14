@@ -203,18 +203,14 @@ footer a:hover {
     .logo {
         gap: 6px;
         flex: 1;
+        min-width: 0;
+        order: 1;
         font-size: 15px;
         white-space: nowrap;
     }
 
     .logo img {
         height: 32px;
-    }
-
-    header > .nav-btn {
-        flex: 0 0 auto;
-        padding: 7px 10px;
-        font-size: 12px;
     }
 
     nav {
@@ -240,6 +236,24 @@ footer a:hover {
 
     .hamburger {
         display: block;
+        flex: 0 0 auto;
+        order: 3;
+    }
+
+    .header-actions {
+        order: 2;
+        flex: 0 0 auto;
+    }
+
+    nav {
+        order: 4;
+    }
+
+    .nav-account {
+        display: block;
+        width: fit-content;
+        margin: 14px 0 0;
+        padding: 9px 16px;
     }
 
     .mobile-only {
