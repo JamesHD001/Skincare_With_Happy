@@ -88,6 +88,11 @@
 - [x] Make the shared logo and Home navigation link return to the landing page.
 - [x] Improve mobile navigation accessibility and prevent missing page-specific controls from breaking shared JavaScript.
 - [x] Give the shop a dedicated catalogue introduction rather than repeating the landing-page hero.
+- [x] Add a five-slide editorial skincare hero carousel with manual controls and reduced-motion support.
+- [x] Add direct All products, Dry skin, and Oily skin discovery links.
+- [x] Include all-skin-type products in specific skin-type catalogue results.
+- [x] Add background add-to-cart requests and a shared live cart quantity indicator.
+- [x] Rename basket-facing customer copy to Cart.
 - [ ] Verify the new landing page and shop locally at desktop, tablet, and mobile widths.
 - [ ] Confirm featured product cards, add-to-cart, product details, account, and checkout still work end to end.
 - [ ] Review editorial image loading and replace temporary remote imagery with approved brand photography when available.
