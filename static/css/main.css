@@ -258,3 +258,37 @@ footer a:hover {
         grid-template-columns: repeat(3, 1fr);
     }
 }
+
+
+/* Shared header cart action */
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+.cart-nav {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    color: var(--primary, #1E3A8A);
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: none;
+}
+.cart-nav__count {
+    display: inline-flex;
+    min-width: 22px;
+    height: 22px;
+    align-items: center;
+    justify-content: center;
+    padding: 0 5px;
+    border-radius: 50px;
+    background: #FF8C00;
+    color: #fff;
+    font-size: 11px;
+}
+@media (max-width: 680px) {
+    .header-actions {
+        gap: 9px;
+    }
+}
