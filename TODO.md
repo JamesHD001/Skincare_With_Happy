@@ -80,4 +80,17 @@
 - [ ] Rehearse the legacy migration procedure on a restorable copy of each real database before applying migrations to that database.
 - [ ] Apply pending migrations to intended deployment databases only after reviewing the data preflight and verifying the direct migration connection.
 
+## Landing page and storefront experience
+- [x] Replace the basic homepage with a premium and clinical editorial-style landing page.
+- [x] Add responsive hero, brand philosophy, skin-type discovery, skincare education, routine guidance, featured products, trust values, and final shop call to action.
+- [x] Keep featured products connected to the existing database and shared product-card component.
+- [x] Limit homepage featured products to the first four catalogue entries.
+- [x] Make the shared logo and Home navigation link return to the landing page.
+- [x] Improve mobile navigation accessibility and prevent missing page-specific controls from breaking shared JavaScript.
+- [x] Give the shop a dedicated catalogue introduction rather than repeating the landing-page hero.
+- [ ] Verify the new landing page and shop locally at desktop, tablet, and mobile widths.
+- [ ] Confirm featured product cards, add-to-cart, product details, account, and checkout still work end to end.
+- [ ] Review editorial image loading and replace temporary remote imagery with approved brand photography when available.
+- [ ] Build a real treatment/service management workflow only if the business confirms the treatments it offers.
+
 Email verification and customer password recovery remain incomplete. Do not treat the second-round corrections or SQLite migration tests as evidence of production readiness.
