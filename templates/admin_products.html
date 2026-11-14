@@ -1,9 +1,6 @@
 {% extends "admin_base.html" %}
 {% block title %}Products | Skincare With Happy Admin{% endblock %}
 
-{% block page_scripts %}
-<script src="{{ url_for('static', filename='js/admin-product-images.js') }}" defer></script>
-{% endblock %}
 {% block page_title %}Products{% endblock %}
 
 {% block admin_content %}
@@ -111,4 +108,8 @@
         <div class="empty-state"><strong>No products yet</strong><span>Add your first product above.</span></div>
     {% endif %}
 </section>
+{% endblock %}
+
+{% block page_scripts %}
+<script src="{{ url_for('static', filename='js/admin-product-images.js') }}" defer></script>
 {% endblock %}
