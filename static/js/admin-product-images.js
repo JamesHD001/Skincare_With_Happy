@@ -24,7 +24,7 @@
             ? previewContainer.querySelector(".image-preview-placeholder, .product-image-empty")
             : null;
         const status = input.getAttribute("aria-describedby")
-            ? document.getElementById(input.getAttribute("aria-describedby").split(/\\s+/).pop())
+            ? document.getElementById(input.getAttribute("aria-describedby").split(/\s+/).pop())
             : previewContainer
                 ? previewContainer.querySelector(".image-preview-status")
                 : null;
