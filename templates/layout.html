@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="{% block meta_description %}Thoughtful skincare essentials and practical guidance to help you build a routine that feels right for your skin.{% endblock %}">
+    <meta name="theme-color" content="#1E3A8A">
     <title>{% block title %}Skincare With Happy{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
     {% block styles %}{% endblock %}
@@ -13,24 +15,24 @@
 <body>
 
 <header>
-    <div class="logo">
-        <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Skincare With Happy Logo">
+    <a class="logo" href="{{ url_for('index') }}" aria-label="Skincare With Happy home">
+        <img src="{{ url_for('static', filename='img/logo.png') }}" alt="">
         <span>SkincareWithHappy</span>
-    </div>
+    </a>
 
-    <button class="hamburger" id="hamburger">
-        ☰
+    <button class="hamburger" id="hamburger" type="button" aria-label="Open navigation" aria-controls="navMenu" aria-expanded="false">
+        <span aria-hidden="true">☰</span>
     </button>
 
-    <nav id="navMenu">
-        <a href="{{ url_for('shop') }}">Shop</a>
-        <a href="{{ url_for('learn') }}">Learn</a>
-        <a href="{{ url_for('about') }}">About</a>
-        <a href="{{ url_for('contact') }}">Contact</a>
+    <nav id="navMenu" aria-label="Main navigation">
+        <a href="{{ url_for('index') }}" {% if request.endpoint == 'index' %}aria-current="page"{% endif %}>Home</a>
+        <a href="{{ url_for('shop') }}" {% if request.endpoint in ['shop', 'products', 'product_detail'] %}aria-current="page"{% endif %}>Shop</a>
+        <a href="{{ url_for('learn') }}" {% if request.endpoint == 'learn' %}aria-current="page"{% endif %}>Learn</a>
+        <a href="{{ url_for('about') }}" {% if request.endpoint == 'about' %}aria-current="page"{% endif %}>About</a>
+        <a href="{{ url_for('contact') }}" {% if request.endpoint == 'contact' %}aria-current="page"{% endif %}>Contact</a>
     </nav>
 
     <a href="{{ url_for('account') }}" class="nav-btn">Account</a>
-    
 </header>
 
 <main>
@@ -48,6 +50,5 @@
 
 {% include "partials/footer.html" %}
 <script src="{{ url_for('static', filename='js/main.js') }}"></script>
-
 </body>
 </html>
