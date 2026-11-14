@@ -32,7 +32,12 @@
         <a href="{{ url_for('contact') }}" {% if request.endpoint == 'contact' %}aria-current="page"{% endif %}>Contact</a>
     </nav>
 
-    <a href="{{ url_for('account') }}" class="nav-btn">Account</a>
+    <div class="header-actions">
+        <a href="{{ url_for('cart') }}" class="cart-nav" aria-label="Open cart, {{ cart_count }} items">
+            <span aria-hidden="true">🛒</span><span>Cart</span><span class="cart-nav__count" data-cart-count>{{ cart_count }}</span>
+        </a>
+        <a href="{{ url_for('account') }}" class="nav-btn">Account</a>
+    </div>
 </header>
 
 <main>
@@ -49,6 +54,6 @@
 </main>
 
 {% include "partials/footer.html" %}
-<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}" defer></script>
 </body>
 </html>
