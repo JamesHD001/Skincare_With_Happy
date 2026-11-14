@@ -20,11 +20,12 @@
             <p class="catalog-stock catalog-stock--available">
                 {{ product.stock }} in stock
             </p>
-            <form class="catalog-card__cart" method="post" action="{{ url_for('add_to_cart') }}">
+            <form class="catalog-card__cart js-add-to-cart" method="post" action="{{ url_for('add_to_cart') }}">
                 <input type="hidden" name="csrf_token" value="{{ customer_csrf_token }}">
                 <input type="hidden" name="product_id" value="{{ product.id }}">
                 <input type="hidden" name="quantity" value="1">
                 <button class="catalog-button" type="submit">Add to cart</button>
+                <span class="catalog-card__cart-message" aria-live="polite"></span>
             </form>
         {% else %}
             <p class="catalog-stock catalog-stock--unavailable">Out of stock</p>
