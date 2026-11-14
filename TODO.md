@@ -86,6 +86,7 @@
 - [x] Keep featured products connected to the existing database and shared product-card component.
 - [x] Limit homepage featured products to the first four catalogue entries.
 - [x] Make the shared logo and Home navigation link return to the landing page.
+- [x] Remove the default underline from the shared header logo link.
 - [x] Improve mobile navigation accessibility and prevent missing page-specific controls from breaking shared JavaScript.
 - [x] Give the shop a dedicated catalogue introduction rather than repeating the landing-page hero.
 - [x] Add a five-slide editorial skincare hero carousel with automatic seven-second transitions, underscore indicators, and reduced-motion support.
