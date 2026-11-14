@@ -136,30 +136,6 @@
     font-size: 20px;
 }
 
-.home-hero__stamp {
-    position: absolute;
-    right: 5%;
-    bottom: 7%;
-    display: flex;
-    width: 112px;
-    height: 112px;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid rgba(255, 255, 255, 0.8);
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.76);
-    color: var(--home-blue);
-    font-size: 9px;
-    letter-spacing: 0.18em;
-    line-height: 1.6;
-}
-
-.home-hero__stamp strong {
-    color: var(--home-orange);
-    font-size: 13px;
-}
-
 .section-shell {
     width: min(1240px, calc(100% - 48px));
     margin: 0 auto;
@@ -561,14 +537,6 @@
         margin-top: 32px;
     }
 
-    .home-hero__stamp {
-        top: 220px;
-        right: 18px;
-        bottom: auto;
-        width: 86px;
-        height: 86px;
-        font-size: 8px;
-    }
 
     .section-shell {
         width: min(100% - 40px, 520px);
@@ -706,30 +674,26 @@
     font-weight: 500;
     line-height: 1.15;
 }
-.home-hero__carousel-controls {
+.home-hero__carousel-indicators {
     position: absolute;
     z-index: 3;
-    right: 7%;
-    bottom: 5%;
+    right: 8%;
+    bottom: 6%;
     display: flex;
     align-items: center;
-    gap: 14px;
-    color: #fff;
-    font-size: 10px;
-    letter-spacing: 0.12em;
+    gap: 8px;
 }
-.home-hero__carousel-controls button {
+.home-hero__carousel-indicators span {
+    display: block;
+    width: 17px;
+    height: 3px;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.58);
+    transition: width 350ms ease, background-color 350ms ease;
+}
+.home-hero__carousel-indicators span.is-active {
     width: 34px;
-    height: 34px;
-    border: 1px solid rgba(255,255,255,.7);
-    border-radius: 50%;
-    background: rgba(20,35,60,.25);
-    color: #fff;
-    cursor: pointer;
-    font-size: 22px;
-}
-.home-hero__carousel-controls button:hover {
-    background: var(--home-orange);
+    background: #fff;
 }
 .home-discover-card__skin-links {
     display: flex;
@@ -758,13 +722,19 @@
     .home-hero__slide-caption {
         bottom: 18%;
     }
-    .home-hero__carousel-controls {
+    .home-hero__carousel-indicators {
         right: 20px;
         bottom: 14px;
     }
 }
 @media (prefers-reduced-motion: reduce) {
     .home-hero__slide {
+        transition: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .home-hero__carousel-indicators span {
         transition: none;
     }
 }
