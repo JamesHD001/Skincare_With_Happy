@@ -28,7 +28,7 @@ from flask_migrate import Migrate
 from PIL import Image, UnidentifiedImageError
 from pypdf import PdfReader
 from pypdf.errors import PdfReadError
-from sqlalchemy import func, update
+from sqlalchemy import func, or_, update
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from werkzeug.exceptions import RequestEntityTooLarge
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -565,6 +565,7 @@ def create_app():
         admin_profile = get_admin_profile() if session.get("admin_authenticated") is True else None
         return {
             "current_year": datetime.now().year,
+            "cart_count": sum(item.get("quantity", 0) for item in session.get("cart", []) if isinstance(item, dict) and isinstance(item.get("quantity"), int)),
             "admin_csrf_token": csrf_token,
             "customer_csrf_token": customer_csrf_token,
             "admin_profile": admin_profile,
@@ -639,7 +640,13 @@ def create_app():
         skin_type = request.args.get("type", "").strip().lower()
         query = Product.query
         if skin_type:
-            query = query.filter(Product.skin_type == skin_type)
+            allowed_skin_types = {"all", "oily", "dry", "combination", "normal", "sensitive"}
+            if skin_type not in allowed_skin_types:
+                abort(404)
+            if skin_type == "all":
+                query = query.filter(Product.skin_type == "all")
+            else:
+                query = query.filter(or_(Product.skin_type == skin_type, Product.skin_type == "all"))
         return render_template(
             "shop.html",
             products=query.order_by(Product.id).all(),
@@ -818,6 +825,9 @@ def create_app():
             flash(f"A cart can contain at most {MAX_CART_LINES} products.", "error")
             return redirect(url_for("cart"))
         session["cart"] = updated
+        cart_count = sum(entry["quantity"] for entry in updated)
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return jsonify({"status": "success", "message": "Product added to your cart.", "cart_count": cart_count, "cart_url": url_for("cart")})
         return redirect(url_for("cart"))
 
     @app.route("/cart/update", methods=["POST"])
