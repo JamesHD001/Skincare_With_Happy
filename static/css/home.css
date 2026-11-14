@@ -728,7 +728,8 @@
     }
 }
 @media (prefers-reduced-motion: reduce) {
-    .home-hero__slide {
+    .home-hero__slide,
+    .home-hero__carousel-indicators span {
         transition: none;
     }
 }
