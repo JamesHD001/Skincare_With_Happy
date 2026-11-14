@@ -6,7 +6,35 @@
 
 {% block content %}
 <section class="home-hero" aria-labelledby="home-hero-title">
-    <div class="home-hero__image" role="img" aria-label="Editorial skincare still life with a serum bottle, soft natural light and botanical details"></div>
+    <div class="home-hero__image" aria-label="Skincare editorial feature carousel">
+        <div class="home-hero__slides" data-hero-carousel>
+            <article class="home-hero__slide is-active" aria-hidden="false">
+                <img src="https://images.unsplash.com/photo-1608248543803-ba4f8c70ae0b?auto=format&fit=crop&w=1800&q=85" alt="Skincare bottles in soft natural light" fetchpriority="high">
+                <div class="home-hero__slide-caption"><span>THE DAILY EDIT</span><strong>Make space for thoughtful skincare.</strong></div>
+            </article>
+            <article class="home-hero__slide" aria-hidden="true">
+                <img src="https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=1800&q=85" alt="Skincare products and beauty essentials" loading="lazy">
+                <div class="home-hero__slide-caption"><span>INGREDIENT SPOTLIGHT</span><strong>Get to know what goes on your skin.</strong></div>
+            </article>
+            <article class="home-hero__slide" aria-hidden="true">
+                <img src="https://images.unsplash.com/photo-1601049541289-9b1b7bbbfe19?auto=format&fit=crop&w=1800&q=85" alt="Minimal skincare products with botanical styling" loading="lazy">
+                <div class="home-hero__slide-caption"><span>ROUTINE NOTES</span><strong>Small steps. Consistent care.</strong></div>
+            </article>
+            <article class="home-hero__slide" aria-hidden="true">
+                <img src="https://images.unsplash.com/photo-1611930022073-b7a4ba5fcccd?auto=format&fit=crop&w=1800&q=85" alt="A curated skincare product arrangement" loading="lazy">
+                <div class="home-hero__slide-caption"><span>SKIN SCHOOL</span><strong>Understand your skin, one question at a time.</strong></div>
+            </article>
+            <article class="home-hero__slide" aria-hidden="true">
+                <img src="https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=1800&q=85" alt="Relaxing facial skincare treatment" loading="lazy">
+                <div class="home-hero__slide-caption"><span>THE HAPPY REMINDER</span><strong>Your routine should work for you.</strong></div>
+            </article>
+        </div>
+        <div class="home-hero__carousel-controls" aria-label="Hero slides">
+            <button type="button" data-hero-prev aria-label="Previous slide">‹</button>
+            <span data-hero-status aria-live="polite">01 / 05</span>
+            <button type="button" data-hero-next aria-label="Next slide">›</button>
+        </div>
+    </div>
     <div class="home-hero__content">
         <p class="home-eyebrow">Thoughtful skincare. Happier routines.</p>
         <h1 id="home-hero-title">Feel good in the skin you're in.</h1>
@@ -60,13 +88,17 @@
             <p>Explore helpful starting points. Your skin type is a guide, not a box.</p>
         </div>
         <div class="home-discover__grid">
-            <a class="home-discover-card home-discover-card--skin" href="{{ url_for('shop') }}">
+            <article class="home-discover-card home-discover-card--skin">
                 <span class="home-discover-card__number">01 / EXPLORE</span>
                 <span class="home-discover-card__symbol" aria-hidden="true">◌</span>
                 <span class="home-discover-card__title">Shop by skin type</span>
                 <span class="home-discover-card__description">Browse essentials for dry, oily, combination and other skin types.</span>
-                <span class="home-discover-card__link">Find your fit <span aria-hidden="true">↗</span></span>
-            </a>
+                <span class="home-discover-card__skin-links">
+                    <a href="{{ url_for('shop') }}">All products</a>
+                    <a href="{{ url_for('shop', type='dry') }}">Dry skin</a>
+                    <a href="{{ url_for('shop', type='oily') }}">Oily skin</a>
+                </span>
+            </article>
             <a class="home-discover-card home-discover-card--learn" href="{{ url_for('learn') }}">
                 <span class="home-discover-card__number">02 / UNDERSTAND</span>
                 <span class="home-discover-card__symbol" aria-hidden="true">✳</span>
