@@ -46,7 +46,6 @@ class S3ReceiptStorage:
                 Body=data,
                 ContentType=content_type,
                 ContentDisposition="attachment",
-                ServerSideEncryption="AES256",
             )
         except (BotoCoreError, ClientError) as error:
             raise ReceiptStorageError("Private receipt storage is unavailable.") from error
