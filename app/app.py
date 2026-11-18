@@ -914,7 +914,7 @@ def create_app():
             )
 
         if request.is_json:
-            return checkout_error_response("Checkout requires a multipart form submission.", 415, stage, customer, draft, payload)
+            return jsonify({"status": "error", "message": "Checkout requires a multipart form submission."}), 415
 
         payload = request.form
         stage = (payload.get("stage") or "payment").strip().lower()
