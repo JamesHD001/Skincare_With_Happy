@@ -125,5 +125,10 @@ Email verification and customer password recovery remain incomplete. Do not trea
 - [x] Add a GitHub Actions workflow to run the Python unittest suite on pushes to the checkout feature branch and relevant pull requests.
 - [x] Diagnose the zero-job workflow failure: GitHub identified a YAML syntax error at line 23 of `.github/workflows/tests.yml`.
 - [x] Quote the SQLite in-memory database URL in the workflow environment to address the reported YAML parsing error.
-- [ ] Confirm the next workflow run creates a job and reaches dependency installation and the Python test command.
-- [ ] Run the expanded checkout test suite successfully before considering checkout verified.
+- [x] Confirm the workflow creates a job and reaches the Python test command.
+- [x] Update legacy customer-account checkout tests to submit delivery details as the second stage.
+- [x] Update migration-head expectations for `20261118_delivery_details`.
+- [x] Correct the expired-draft test to reassign the nested session draft so Flask persists the expiry change.
+- [x] Align the shop filter test with the intended inclusion of all-skin-type products.
+- [x] Update the admin product-creation test to provide the now-required product image.
+- [ ] Confirm the latest full test run passes; the current run is still in progress.
