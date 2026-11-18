@@ -41,8 +41,10 @@
 - [x] Save editable delivery details for signed-in customers while keeping guest checkout account-free.
 - [x] Store an immutable delivery-details snapshot on each order.
 - [x] Build a customer-friendly confirmation page with order number, payment status, delivery summary, and next steps.
-- [ ] Add tests for stage separation, delivery validation, duplicate references, stock conflicts, saved addresses, guest checkout, and receipt cleanup.
+- [x] Add tests for payment-stage separation, invalid delivery retry, duplicate payment references, stock conflicts, guest checkout, and invalid email addresses.
+- [ ] Add signed-in saved-address persistence and immutable-snapshot tests, plus explicit expired-receipt cleanup tests.
 - [x] Update README checkout documentation after implementation.
+- [ ] Add reliable scheduled cleanup for abandoned staged receipts; current cleanup is opportunistic when an expired draft is revisited.
 - [ ] Test the new migration and checkout flow against local/disposable databases only; do not run production migrations.
 
 ## Admin console
