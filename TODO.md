@@ -45,7 +45,9 @@
 - [x] Add signed-in saved-address persistence and immutable-snapshot tests, plus explicit expired-receipt cleanup tests.
 - [x] Update README checkout documentation after implementation.
 - [ ] Add reliable scheduled cleanup for abandoned staged receipts; current cleanup is opportunistic when an expired draft is revisited.
-- [ ] Test the new migration and checkout flow against local/disposable databases only; do not run production migrations.
+- [x] Exercise the migration chain against disposable SQLite databases in the automated legacy-schema upgrade tests; verify the new delivery columns and preservation of legacy orders.
+- [x] Verify checkout stages, delivery validation, guest/signed-in flows, saved-address persistence, and immutable order snapshots through the automated test suite (62 tests passed in GitHub Actions run #20).
+- [ ] Perform a browser-based checkout walkthrough against a local development database before merging; do not run production migrations.
 
 ## Admin console
 - [x] Protect admin routes with environment-configured login and CSRF validation.
