@@ -13,6 +13,17 @@ from app.models import AdminProfile, Order, OrderItem, PaymentAuditLog, Product,
 from werkzeug.security import check_password_hash
 
 
+class MemoryProductImageStorage:
+    def save(self, data):
+        return "products/0123456789abcdef0123456789abcdef.webp"
+
+    def delete(self, key):
+        return None
+
+    def public_url(self, key):
+        return f"https://images.example.test/{key}"
+
+
 class AdminConsoleTests(unittest.TestCase):
     def setUp(self):
         self.app = create_app()
@@ -68,6 +79,13 @@ class AdminConsoleTests(unittest.TestCase):
 
     def test_dashboard_and_product_catalog_use_live_data(self):
         self.sign_in()
+        self.app.extensions["product_image_storage"] = MemoryProductImageStorage()
+        from PIL import Image
+        import io
+
+        image_output = io.BytesIO()
+        Image.new("RGB", (2, 2), color="white").save(image_output, format="PNG")
+        image_output.seek(0)
         response = self.client.post(
             "/admin/products",
             data={
@@ -77,7 +95,9 @@ class AdminConsoleTests(unittest.TestCase):
                 "price": "14500",
                 "stock": "3",
                 "description": "A gentle barrier-supporting cream.",
+                "image": (image_output, "calming-oat.png"),
             },
+            content_type="multipart/form-data",
         )
         self.assertEqual(response.status_code, 302)
 
