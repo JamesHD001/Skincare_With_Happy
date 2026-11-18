@@ -299,17 +299,21 @@ class CheckoutHardeningTests(unittest.TestCase):
     def test_checkout_database_failure_rolls_back_reserved_stock(self):
         with self.client.session_transaction() as session:
             session["cart"] = [{"product_id": 1, "quantity": 2}]
+        payment = self.client.post("/checkout", data=self.checkout_data())
+        self.assertEqual(payment.status_code, 302)
         with patch(
             "app.app.db.session.flush",
             side_effect=IntegrityError("simulated failure", {}, Exception()),
         ):
-            response = self.client.post("/checkout", data=self.checkout_data())
+            response = self.client.post("/checkout", data=self.delivery_data())
 
         self.assertEqual(response.status_code, 500)
         with self.app.app_context():
             self.assertEqual(Order.query.count(), 0)
             self.assertEqual(db.session.get(Product, 1).stock, 25)
-        self.assertEqual(self.storage.files, {})
+        self.assertEqual(len(self.storage.files), 1)
+        with self.client.session_transaction() as session:
+            self.assertIn("checkout_draft", session)
 
     def test_requests_do_not_create_schema_and_seed_command_is_idempotent(self):
         with self.app.app_context():
