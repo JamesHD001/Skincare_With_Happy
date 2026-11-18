@@ -412,5 +412,91 @@ class CheckoutHardeningTests(unittest.TestCase):
         self.assertEqual(len(self.storage.files), 1)
 
 
+    def test_signed_in_customer_address_is_saved_and_order_snapshot_is_immutable(self):
+        from app.models import Customer
+
+        with self.app.app_context():
+            customer = Customer(
+                full_name="Account Buyer",
+                email="account@example.test",
+                phone_number="+2348000000000",
+                password_hash="test-hash",
+            )
+            db.session.add(customer)
+            db.session.commit()
+            customer_id = customer.id
+
+        with self.client.session_transaction() as session:
+            session["customer_id"] = customer_id
+            session["customer_name"] = "Account Buyer"
+            session["cart"] = [{"product_id": 1, "quantity": 1}]
+
+        payment = self.client.post("/checkout", data=self.checkout_data())
+        self.assertEqual(payment.status_code, 302)
+        delivery = self.client.post(
+            "/checkout",
+            data=self.delivery_data(
+                delivery_recipient_name="Recipient One",
+                delivery_address="12 First Street",
+                delivery_landmark="Blue gate",
+            ),
+        )
+        self.assertEqual(delivery.status_code, 302)
+
+        with self.app.app_context():
+            customer = db.session.get(Customer, customer_id)
+            order = Order.query.one()
+            self.assertEqual(customer.delivery_state, "Oyo")
+            self.assertEqual(customer.delivery_city, "Ibadan")
+            self.assertEqual(customer.delivery_address, "12 First Street")
+            self.assertEqual(customer.delivery_landmark, "Blue gate")
+            self.assertEqual(customer.phone_number, "+2348012345678")
+            customer.delivery_state = "Lagos"
+            customer.delivery_city = "Ikeja"
+            customer.delivery_address = "99 New Street"
+            customer.delivery_landmark = "Red gate"
+            db.session.commit()
+            db.session.refresh(order)
+            self.assertEqual(order.delivery_state, "Oyo")
+            self.assertEqual(order.delivery_city, "Ibadan")
+            self.assertEqual(order.delivery_address, "12 First Street")
+            self.assertEqual(order.delivery_landmark, "Blue gate")
+
+    def test_expired_checkout_draft_deletes_receipt_and_returns_to_payment_stage(self):
+        with self.client.session_transaction() as session:
+            session["cart"] = [{"product_id": 1, "quantity": 1}]
+        payment = self.client.post("/checkout", data=self.checkout_data())
+        self.assertEqual(payment.status_code, 302)
+        with self.client.session_transaction() as session:
+            receipt_key = session["checkout_draft"]["receipt_key"]
+            session["checkout_draft"]["expires_at"] = 1
+
+        response = self.client.get("/checkout?stage=delivery")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Payment verification", response.data)
+        self.assertNotIn(receipt_key, self.storage.files)
+        with self.client.session_transaction() as session:
+            self.assertNotIn("checkout_draft", session)
+
+    def test_checkout_validation_errors_render_page_and_preserve_delivery_values(self):
+        with self.client.session_transaction() as session:
+            session["cart"] = [{"product_id": 1, "quantity": 1}]
+        self.client.post("/checkout", data=self.checkout_data())
+        response = self.client.post(
+            "/checkout",
+            data=self.delivery_data(
+                delivery_email="invalid-email",
+                delivery_city="Abeokuta",
+                delivery_address="42 Retained Road",
+            ),
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn(b'class="checkout-error" role="alert"', response.data)
+        self.assertIn(b"valid delivery email", response.data)
+        self.assertIn(b'value="Abeokuta"', response.data)
+        self.assertIn(b"42 Retained Road", response.data)
+        self.assertEqual(len(self.storage.files), 1)
+
+
 if __name__ == "__main__":
     unittest.main()
