@@ -11,6 +11,9 @@
     <p class="account-eyebrow">Almost there</p>
     <h1>Checkout</h1>
     <p class="account-intro">Complete payment details first, then tell us where to deliver your order.</p>
+    {% if checkout_error %}
+        <div class="checkout-error" role="alert">{{ checkout_error }}</div>
+    {% endif %}
 
     {% if cart_summary["items"] %}
         <div class="checkout-steps" aria-label="Checkout progress">
@@ -29,19 +32,19 @@
                         </p>
                     {% else %}
                         <label for="name">Full name</label>
-                        <input id="name" name="name" type="text" maxlength="150" autocomplete="name" required>
+                        <input id="name" name="name" type="text" maxlength="150" autocomplete="name" value="{{ form_data.get('name', '') }}" required>
                         <label for="email">Email address</label>
-                        <input id="email" name="email" type="email" maxlength="254" autocomplete="email" required>
+                        <input id="email" name="email" type="email" maxlength="254" autocomplete="email" value="{{ form_data.get('email', '') }}" required>
                     {% endif %}
                     <label for="phone">Contact phone <span>(optional)</span></label>
                     <input id="phone" name="phone" type="tel" maxlength="40" autocomplete="tel"
-                           value="{{ customer.phone_number if customer and customer.phone_number else '' }}">
+                           value="{{ form_data.get('phone', customer.phone_number if customer and customer.phone_number else '') }}">
 
                     <h2 class="checkout-payment-heading">Payment verification</h2>
                     <p class="checkout-help">After transferring, provide the transaction reference and upload your receipt. Your order is not created until delivery details are completed.</p>
                     <input type="hidden" name="payment_method" value="manual_transfer">
                     <label for="reference">Transaction reference</label>
-                    <input id="reference" name="reference" type="text" maxlength="120" required>
+                    <input id="reference" name="reference" type="text" maxlength="120" value="{{ form_data.get('reference', '') }}" required>
                     <label for="receipt">Payment receipt</label>
                     <input id="receipt" name="receipt" type="file"
                            accept="image/png,image/jpeg,image/webp,application/pdf" required>
@@ -63,24 +66,24 @@
                     {% endif %}
                     <label for="delivery_recipient_name">Recipient full name</label>
                     <input id="delivery_recipient_name" name="delivery_recipient_name" maxlength="150"
-                           autocomplete="shipping name" value="{{ customer.full_name if customer else draft.name }}" required>
+                           autocomplete="shipping name" value="{{ form_data.get('delivery_recipient_name', customer.full_name if customer else draft.name) }}" required>
                     <label for="delivery_phone">Delivery phone number</label>
                     <input id="delivery_phone" name="delivery_phone" type="tel" maxlength="40"
-                           autocomplete="shipping tel" value="{{ customer.phone_number if customer and customer.phone_number else draft.phone }}" required>
+                           autocomplete="shipping tel" value="{{ form_data.get('delivery_phone', customer.phone_number if customer and customer.phone_number else draft.phone) }}" required>
                     <label for="delivery_email">Delivery email address</label>
                     <input id="delivery_email" name="delivery_email" type="email" maxlength="254"
-                           autocomplete="email" value="{{ customer.email if customer else draft.email }}" required>
+                           autocomplete="email" value="{{ form_data.get('delivery_email', customer.email if customer else draft.email) }}" required>
                     <label for="delivery_state">State</label>
                     <input id="delivery_state" name="delivery_state" maxlength="100" autocomplete="shipping address-level1"
-                           value="{{ customer.delivery_state if customer and customer.delivery_state else '' }}" required>
+                           value="{{ form_data.get('delivery_state', customer.delivery_state if customer and customer.delivery_state else '') }}" required>
                     <label for="delivery_city">City / town</label>
                     <input id="delivery_city" name="delivery_city" maxlength="120" autocomplete="shipping address-level2"
-                           value="{{ customer.delivery_city if customer and customer.delivery_city else '' }}" required>
+                           value="{{ form_data.get('delivery_city', customer.delivery_city if customer and customer.delivery_city else '') }}" required>
                     <label for="delivery_address">Full delivery address</label>
                     <textarea id="delivery_address" name="delivery_address" maxlength="500"
-                              autocomplete="shipping street-address" required>{{ customer.delivery_address if customer and customer.delivery_address else '' }}</textarea>
+                              autocomplete="shipping street-address" required>{{ form_data.get('delivery_address', customer.delivery_address if customer and customer.delivery_address else '') }}</textarea>
                     <label for="delivery_landmark">Landmark or delivery instructions <span>(optional)</span></label>
-                    <textarea id="delivery_landmark" name="delivery_landmark" maxlength="250">{{ customer.delivery_landmark if customer and customer.delivery_landmark else '' }}</textarea>
+                    <textarea id="delivery_landmark" name="delivery_landmark" maxlength="250">{{ form_data.get('delivery_landmark', customer.delivery_landmark if customer and customer.delivery_landmark else '') }}</textarea>
                     <button class="account-submit checkout-submit" type="submit">Place order</button>
                     <a class="checkout-back-link" href="{{ url_for('checkout', stage='payment') }}">Start payment details again</a>
                 {% endif %}
