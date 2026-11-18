@@ -41,8 +41,8 @@
 - [x] Save editable delivery details for signed-in customers while keeping guest checkout account-free.
 - [x] Store an immutable delivery-details snapshot on each order.
 - [x] Build a customer-friendly confirmation page with order number, payment status, delivery summary, and next steps.
-- [x] Add tests for payment-stage separation, invalid delivery retry, duplicate payment references, stock conflicts, guest checkout, and invalid email addresses.
-- [ ] Add signed-in saved-address persistence and immutable-snapshot tests, plus explicit expired-receipt cleanup tests.
+- [x] Add tests for payment-stage separation, invalid delivery retry, duplicate payment references, stock conflicts, guest checkout, invalid email addresses, signed-in saved-address persistence, immutable order snapshots, and expired receipt cleanup.
+- [x] Add signed-in saved-address persistence and immutable-snapshot tests, plus explicit expired-receipt cleanup tests.
 - [x] Update README checkout documentation after implementation.
 - [ ] Add reliable scheduled cleanup for abandoned staged receipts; current cleanup is opportunistic when an expired draft is revisited.
 - [ ] Test the new migration and checkout flow against local/disposable databases only; do not run production migrations.
@@ -123,4 +123,5 @@ Email verification and customer password recovery remain incomplete. Do not trea
 
 ### Automated verification
 - [x] Add a GitHub Actions workflow to run the Python unittest suite on pushes to the checkout feature branch and relevant pull requests.
-- [ ] Review the first GitHub Actions run and fix any failures before considering checkout verified.
+- [ ] Diagnose the GitHub Actions workflow failure; the latest run completed with failure but GitHub exposed no jobs or logs.
+- [ ] Run the expanded checkout test suite successfully before considering checkout verified.
