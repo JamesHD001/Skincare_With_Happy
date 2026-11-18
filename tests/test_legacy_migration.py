@@ -295,7 +295,7 @@ class LegacyMigrationTests(unittest.TestCase):
                         connection.execute(
                             text("SELECT version_num FROM alembic_version")
                         ).scalar_one(),
-                        "20261114_product_images",
+                        "20261118_delivery_details",
                     )
             finally:
                 application_engine.dispose()
@@ -370,7 +370,7 @@ class LegacyMigrationTests(unittest.TestCase):
                         connection.execute(
                             text("SELECT version_num FROM alembic_version")
                         ).scalar_one(),
-                        "20261114_product_images",
+                        "20261118_delivery_details",
                     )
                     self.assertEqual(
                         connection.execute(
