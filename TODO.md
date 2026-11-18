@@ -119,3 +119,8 @@
 - [ ] Build a real treatment/service management workflow only if the business confirms the treatments it offers.
 
 Email verification and customer password recovery remain incomplete. Do not treat the second-round corrections or SQLite migration tests as evidence of production readiness.
+
+
+### Automated verification
+- [x] Add a GitHub Actions workflow to run the Python unittest suite on pushes to the checkout feature branch and relevant pull requests.
+- [ ] Review the first GitHub Actions run and fix any failures before considering checkout verified.
