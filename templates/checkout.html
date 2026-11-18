@@ -3,46 +3,86 @@
 {% block title %}Checkout | Skincare With Happy{% endblock %}
 {% block styles %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/account.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/checkout.css') }}">
 {% endblock %}
 
 {% block content %}
 <section class="account-page account-page-wide checkout-page">
     <p class="account-eyebrow">Almost there</p>
     <h1>Checkout</h1>
-    <p class="account-intro">Guest checkout is available. Sign in to attach this order to your account.</p>
+    <p class="account-intro">Complete payment details first, then tell us where to deliver your order.</p>
 
     {% if cart_summary["items"] %}
+        <div class="checkout-steps" aria-label="Checkout progress">
+            <span class="{{ 'is-active' if stage == 'payment' else 'is-complete' }}">1. Payment details</span>
+            <span class="{{ 'is-active' if stage == 'delivery' else '' }}">2. Delivery details</span>
+        </div>
         <form class="checkout-layout" method="post" action="{{ url_for('checkout') }}" enctype="multipart/form-data">
             <input type="hidden" name="csrf_token" value="{{ customer_csrf_token }}">
-            <input type="hidden" name="payment_method" value="manual_transfer">
+            <input type="hidden" name="stage" value="{{ stage }}">
             <section class="checkout-panel">
-                <h2>Customer details</h2>
-                {% if customer %}
-                    <p class="checkout-signed-in">Ordering as <strong>{{ customer.full_name }}</strong> ({{ customer.email }}).
-                        <a href="{{ url_for('account') }}">Manage account</a>
-                    </p>
-                {% else %}
-                    <label for="name">Full name</label>
-                    <input id="name" name="name" type="text" maxlength="150" autocomplete="name" required>
-                    <label for="email">Email address</label>
-                    <input id="email" name="email" type="email" maxlength="150" autocomplete="email" required>
-                {% endif %}
-                <label for="phone">Phone number <span>(optional)</span></label>
-                <input id="phone" name="phone" type="tel" maxlength="40" autocomplete="tel"
-                       value="{{ customer.phone_number if customer and customer.phone_number else '' }}">
+                {% if stage == "payment" %}
+                    <h2>Customer details</h2>
+                    {% if customer %}
+                        <p class="checkout-signed-in">Ordering as <strong>{{ customer.full_name }}</strong> ({{ customer.email }}).
+                            <a href="{{ url_for('account') }}">Manage account</a>
+                        </p>
+                    {% else %}
+                        <label for="name">Full name</label>
+                        <input id="name" name="name" type="text" maxlength="150" autocomplete="name" required>
+                        <label for="email">Email address</label>
+                        <input id="email" name="email" type="email" maxlength="254" autocomplete="email" required>
+                    {% endif %}
+                    <label for="phone">Contact phone <span>(optional)</span></label>
+                    <input id="phone" name="phone" type="tel" maxlength="40" autocomplete="tel"
+                           value="{{ customer.phone_number if customer and customer.phone_number else '' }}">
 
-                <h2 class="checkout-payment-heading">Payment verification</h2>
-                <p class="checkout-help">After transferring, provide the transaction reference and upload your receipt. Your order will be reviewed before fulfillment.</p>
-                <label for="reference">Transaction reference</label>
-                <input id="reference" name="reference" type="text" maxlength="120" required>
-                <label for="receipt">Payment receipt</label>
-                <input id="receipt" name="receipt" type="file"
-                       accept="image/png,image/jpeg,image/webp,application/pdf" required>
-                {% if cart_summary["available"] %}
-                    <button class="account-submit checkout-submit" type="submit">Submit order for verification</button>
+                    <h2 class="checkout-payment-heading">Payment verification</h2>
+                    <p class="checkout-help">After transferring, provide the transaction reference and upload your receipt. Your order is not created until delivery details are completed.</p>
+                    <input type="hidden" name="payment_method" value="manual_transfer">
+                    <label for="reference">Transaction reference</label>
+                    <input id="reference" name="reference" type="text" maxlength="120" required>
+                    <label for="receipt">Payment receipt</label>
+                    <input id="receipt" name="receipt" type="file"
+                           accept="image/png,image/jpeg,image/webp,application/pdf" required>
+                    {% if cart_summary["available"] %}
+                        <button class="account-submit checkout-submit" type="submit">Continue to delivery</button>
+                    {% else %}
+                        <p class="cart-unavailable">Update your cart to resolve stock availability before checkout.</p>
+                        <a class="checkout-back-link" href="{{ url_for('cart') }}">Return to cart</a>
+                    {% endif %}
                 {% else %}
-                    <p class="cart-unavailable">Update your basket to resolve stock availability before checkout.</p>
-                    <a class="checkout-back-link" href="{{ url_for('cart') }}">Return to basket</a>
+                    <h2>Delivery details</h2>
+                    <p class="checkout-help">Your payment receipt is securely staged. Complete the delivery information to place your order.</p>
+                    {% if customer and customer.delivery_address %}
+                        <div class="checkout-saved-address">
+                            <strong>Saved delivery address</strong>
+                            <p>{{ customer.delivery_address }}, {{ customer.delivery_city }}, {{ customer.delivery_state }}</p>
+                            <p>Use the fields below to keep or update these details.</p>
+                        </div>
+                    {% endif %}
+                    <label for="delivery_recipient_name">Recipient full name</label>
+                    <input id="delivery_recipient_name" name="delivery_recipient_name" maxlength="150"
+                           autocomplete="shipping name" value="{{ customer.full_name if customer else draft.name }}" required>
+                    <label for="delivery_phone">Delivery phone number</label>
+                    <input id="delivery_phone" name="delivery_phone" type="tel" maxlength="40"
+                           autocomplete="shipping tel" value="{{ customer.phone_number if customer and customer.phone_number else draft.phone }}" required>
+                    <label for="delivery_email">Delivery email address</label>
+                    <input id="delivery_email" name="delivery_email" type="email" maxlength="254"
+                           autocomplete="email" value="{{ customer.email if customer else draft.email }}" required>
+                    <label for="delivery_state">State</label>
+                    <input id="delivery_state" name="delivery_state" maxlength="100" autocomplete="shipping address-level1"
+                           value="{{ customer.delivery_state if customer and customer.delivery_state else '' }}" required>
+                    <label for="delivery_city">City / town</label>
+                    <input id="delivery_city" name="delivery_city" maxlength="120" autocomplete="shipping address-level2"
+                           value="{{ customer.delivery_city if customer and customer.delivery_city else '' }}" required>
+                    <label for="delivery_address">Full delivery address</label>
+                    <textarea id="delivery_address" name="delivery_address" maxlength="500"
+                              autocomplete="shipping street-address" required>{{ customer.delivery_address if customer and customer.delivery_address else '' }}</textarea>
+                    <label for="delivery_landmark">Landmark or delivery instructions <span>(optional)</span></label>
+                    <textarea id="delivery_landmark" name="delivery_landmark" maxlength="250">{{ customer.delivery_landmark if customer and customer.delivery_landmark else '' }}</textarea>
+                    <button class="account-submit checkout-submit" type="submit">Place order</button>
+                    <a class="checkout-back-link" href="{{ url_for('checkout', stage='payment') }}">Start payment details again</a>
                 {% endif %}
             </section>
 
