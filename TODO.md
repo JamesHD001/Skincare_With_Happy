@@ -133,4 +133,6 @@ Email verification and customer password recovery remain incomplete. Do not trea
 - [x] Correct the expired-draft test to reassign the nested session draft so Flask persists the expiry change.
 - [x] Align the shop filter test with the intended inclusion of all-skin-type products.
 - [x] Update the admin product-creation test to provide the now-required product image.
-- [x] Confirm the latest full test run passes: all 62 tests passed in GitHub Actions run #20, and the subsequent TODO-only run #21 also passed.
+- [x] Confirm the checkout suite passes: all 62 tests passed in GitHub Actions run #20.
+- [x] Add migration assertions for all saved-address and order-snapshot columns, nullable legacy snapshots, and preservation of existing orders.
+- [x] Confirm the expanded migration assertions pass in GitHub Actions run #23 and the latest branch state passes in run #24.
