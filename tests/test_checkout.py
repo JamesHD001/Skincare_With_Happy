@@ -83,6 +83,27 @@ class CheckoutHardeningTests(unittest.TestCase):
         data.update(overrides)
         return data
 
+    def delivery_data(self, **overrides):
+        data = {
+            "csrf_token": self.csrf_token(),
+            "stage": "delivery",
+            "delivery_recipient_name": "Guest Buyer",
+            "delivery_phone": "+2348012345678",
+            "delivery_email": "guest@example.test",
+            "delivery_state": "Oyo",
+            "delivery_city": "Ibadan",
+            "delivery_address": "12 Example Street",
+            "delivery_landmark": "Near the market",
+        }
+        data.update(overrides)
+        return data
+
+    def submit_complete_checkout(self, **payment_overrides):
+        payment = self.client.post("/checkout", data=self.checkout_data(**payment_overrides))
+        self.assertEqual(payment.status_code, 302)
+        self.assertIn("stage=delivery", payment.location)
+        return self.client.post("/checkout", data=self.delivery_data())
+
     def test_checkout_uses_database_prices_and_reserves_stock_atomically(self):
         with self.client.session_transaction() as session:
             session["cart"] = [{"product_id": 1, "quantity": 2, "price": "0.01"}]
@@ -94,6 +115,8 @@ class CheckoutHardeningTests(unittest.TestCase):
                 receipt_file="/static/uploads/payments/forged.png",
             ),
         )
+        self.assertEqual(response.status_code, 302)
+        response = self.client.post("/checkout", data=self.delivery_data())
         self.assertEqual(response.status_code, 302)
 
         with self.app.app_context():
@@ -168,7 +191,9 @@ class CheckoutHardeningTests(unittest.TestCase):
         with self.client.session_transaction() as session:
             session["cart"] = [{"product_id": 1, "quantity": 2}]
 
-        response = self.client.post("/checkout", data=self.checkout_data())
+        payment = self.client.post("/checkout", data=self.checkout_data())
+        self.assertEqual(payment.status_code, 302)
+        response = self.client.post("/checkout", data=self.delivery_data())
         self.assertEqual(response.status_code, 409)
         self.assertIn(b"Only 1 unit", response.data)
         with self.app.app_context():
@@ -215,7 +240,7 @@ class CheckoutHardeningTests(unittest.TestCase):
     def test_receipt_download_requires_admin_and_is_an_attachment(self):
         with self.client.session_transaction() as session:
             session["cart"] = [{"product_id": 1, "quantity": 1}]
-        response = self.client.post("/checkout", data=self.checkout_data())
+        response = self.submit_complete_checkout()
         self.assertEqual(response.status_code, 302)
         with self.app.app_context():
             order_id = Order.query.one().id
