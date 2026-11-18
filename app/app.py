@@ -911,6 +911,7 @@ def create_app():
                 customer=customer,
                 stage=stage,
                 draft=draft,
+                form_data={},
             )
 
         if request.is_json:
