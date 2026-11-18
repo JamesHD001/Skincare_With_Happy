@@ -120,10 +120,10 @@
 
 Email verification and customer password recovery remain incomplete. Do not treat the second-round corrections or SQLite migration tests as evidence of production readiness.
 
-
 ### Automated verification
 - [x] Remove a stray syntax fragment found during the checkout-route audit that would prevent `app/app.py` from importing.
 - [x] Add a GitHub Actions workflow to run the Python unittest suite on pushes to the checkout feature branch and relevant pull requests.
-- [ ] Diagnose the GitHub Actions workflow failure; runs still complete with zero jobs, so the Python test command has not been reached.
-- [x] Add a manual `workflow_dispatch` trigger and read-only repository permissions to simplify CI verification.
+- [x] Diagnose the zero-job workflow failure: GitHub identified a YAML syntax error at line 23 of `.github/workflows/tests.yml`.
+- [x] Quote the SQLite in-memory database URL in the workflow environment to address the reported YAML parsing error.
+- [ ] Confirm the next workflow run creates a job and reaches dependency installation and the Python test command.
 - [ ] Run the expanded checkout test suite successfully before considering checkout verified.
