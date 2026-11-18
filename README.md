@@ -278,3 +278,11 @@ Work on a feature branch, keep changes focused, test affected workflows, and upd
 ## License
 
 No license has been specified yet. All rights remain with the respective copyright holder unless a license is added to this repository.
+
+## Customer checkout flow
+
+Checkout is split into two steps. Customers first submit a payment reference and a receipt, which is stored in private receipt storage as a short-lived checkout draft. The order is not created and inventory is not deducted at this point. Customers then submit recipient and delivery details. Only after the delivery details and stock are validated does the application create the order, record its delivery address snapshot, and deduct inventory in the same database transaction.
+
+Signed-in customers have their latest delivery state, city, address, and landmark saved to their customer profile for reuse. Each order keeps its own delivery snapshot. Guest checkout remains available and does not create a customer account. Incomplete checkout drafts expire after two hours; their private receipt is removed when the expired draft is next encountered in that browser session.
+
+The delivery migration is 20261118_delivery_details. Test it only against a local or disposable database first. Do not apply it to a production database without a reviewed backup and explicit deployment approval.
