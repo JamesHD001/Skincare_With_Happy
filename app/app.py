@@ -859,7 +859,9 @@ def create_app():
         session["cart"] = [
             item for item in cart if item["product_id"] != product_id
         ]
-        return redirect(url_for    def discard_checkout_draft():
+        return redirect(url_for("cart"))
+
+    def discard_checkout_draft():
         draft = session.pop("checkout_draft", None)
         if not draft:
             return
@@ -926,7 +928,7 @@ def create_app():
 
             if not name or len(name) > 150:
                 return jsonify({"status": "error", "message": "Enter a valid customer name."}), 400
-            if not re.fullmatch(r"[^@\s]+@[^@\s]+\\.[^@\s]+", email) or len(email) > 254:
+            if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email) or len(email) > 254:
                 return jsonify({"status": "error", "message": "Enter a valid customer email address."}), 400
             if len(phone) > 40:
                 return jsonify({"status": "error", "message": "Phone number must be 40 characters or fewer."}), 400
@@ -979,7 +981,7 @@ def create_app():
             return jsonify({"status": "error", "message": "Enter the recipient's full name."}), 400
         if not delivery_phone or len(delivery_phone) > 40:
             return jsonify({"status": "error", "message": "Enter a valid delivery phone number."}), 400
-        if not re.fullmatch(r"[^@\s]+@[^@\s]+\\.[^@\s]+", delivery_email) or len(delivery_email) > 254:
+        if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", delivery_email) or len(delivery_email) > 254:
             return jsonify({"status": "error", "message": "Enter a valid delivery email address."}), 400
         if not state or len(state) > 100 or not city or len(city) > 120:
             return jsonify({"status": "error", "message": "Enter a valid state and city or town."}), 400
