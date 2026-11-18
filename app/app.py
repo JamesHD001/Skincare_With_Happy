@@ -885,6 +885,17 @@ def create_app():
             return None
         return draft
 
+    def checkout_error_response(message, status_code, stage, customer, draft, payload=None):
+        return render_template(
+            "checkout.html",
+            cart_summary=build_cart_summary(session.get("cart", [])),
+            customer=customer,
+            stage=stage,
+            draft=draft,
+            checkout_error=message,
+            form_data=payload or {},
+        ), status_code
+
     @app.route("/checkout", methods=["GET", "POST"])
     def checkout():
         customer = get_current_customer()
@@ -903,7 +914,7 @@ def create_app():
             )
 
         if request.is_json:
-            return jsonify({"status": "error", "message": "Checkout requires a multipart form submission."}), 415
+            return checkout_error_response("Checkout requires a multipart form submission.", 415, stage, customer, draft, payload)
 
         payload = request.form
         stage = (payload.get("stage") or "payment").strip().lower()
@@ -911,9 +922,9 @@ def create_app():
         try:
             cart = parse_cart(session.get("cart", []))
         except CartValidationError as error:
-            return jsonify({"status": "error", "message": str(error)}), 400
+            return checkout_error_response(str(error), 400, stage, customer, draft, payload)
         if not cart:
-            return jsonify({"status": "error", "message": "Your cart is empty."}), 400
+            return checkout_error_response("Your cart is empty.", 400, stage, customer, draft, payload)
 
         if stage == "payment":
             if customer is None:
@@ -927,31 +938,31 @@ def create_app():
             reference = (payload.get("reference") or "").strip()
 
             if not name or len(name) > 150:
-                return jsonify({"status": "error", "message": "Enter a valid customer name."}), 400
+                return checkout_error_response("Enter a valid customer name.", 400, stage, customer, draft, payload)
             if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email) or len(email) > 254:
-                return jsonify({"status": "error", "message": "Enter a valid customer email address."}), 400
+                return checkout_error_response("Enter a valid customer email address.", 400, stage, customer, draft, payload)
             if len(phone) > 40:
-                return jsonify({"status": "error", "message": "Phone number must be 40 characters or fewer."}), 400
+                return checkout_error_response("Phone number must be 40 characters or fewer.", 400, stage, customer, draft, payload)
             if method not in ALLOWED_PAYMENT_METHODS:
-                return jsonify({"status": "error", "message": "Choose a supported payment method."}), 400
+                return checkout_error_response("Choose a supported payment method.", 400, stage, customer, draft, payload)
             if not reference or len(reference) > 120:
-                return jsonify({"status": "error", "message": "A payment reference is required."}), 400
+                return checkout_error_response("A payment reference is required.", 400, stage, customer, draft, payload)
             if Order.query.filter_by(payment_reference=reference).first():
-                return jsonify({"status": "error", "message": "This payment reference has already been used."}), 409
+                return checkout_error_response("This payment reference has already been used.", 409, stage, customer, draft, payload)
 
             storage = app.extensions.get("receipt_storage")
             if storage is None:
-                return jsonify({"status": "error", "message": "Private receipt storage is not configured. Please try again later."}), 503
+                return checkout_error_response("Private receipt storage is not configured. Please try again later.", 503, stage, customer, draft, payload)
             try:
                 receipt_data, extension, content_type = validate_receipt_upload(
                     request.files.get("receipt"), MAX_RECEIPT_SIZE_BYTES
                 )
                 receipt_key = storage.save(receipt_data, extension, content_type)
             except CheckoutError as error:
-                return jsonify({"status": "error", "message": str(error)}), error.status_code
+                return checkout_error_response(str(error), error.status_code, stage, customer, draft, payload)
             except ReceiptStorageError as error:
                 app.logger.warning("Private receipt upload failed: %s", error)
-                return jsonify({"status": "error", "message": "Receipt storage is temporarily unavailable. Please try again later."}), 503
+                return checkout_error_response("Receipt storage is temporarily unavailable. Please try again later.", 503, stage, customer, draft, payload)
 
             discard_checkout_draft()
             session["checkout_draft"] = {
@@ -967,7 +978,7 @@ def create_app():
             return redirect(url_for("checkout", stage="delivery"))
 
         if stage != "delivery" or not draft:
-            return jsonify({"status": "error", "message": "Your payment details have expired. Please submit them again."}), 400
+            return checkout_error_response("Your payment details have expired. Please submit them again.", 400, stage, customer, draft, payload)
 
         recipient = (payload.get("delivery_recipient_name") or "").strip()
         delivery_phone = (payload.get("delivery_phone") or "").strip()
@@ -978,15 +989,15 @@ def create_app():
         landmark = (payload.get("delivery_landmark") or "").strip()
 
         if not recipient or len(recipient) > 150:
-            return jsonify({"status": "error", "message": "Enter the recipient's full name."}), 400
+            return checkout_error_response("Enter the recipient's full name.", 400, stage, customer, draft, payload)
         if not delivery_phone or len(delivery_phone) > 40:
-            return jsonify({"status": "error", "message": "Enter a valid delivery phone number."}), 400
+            return checkout_error_response("Enter a valid delivery phone number.", 400, stage, customer, draft, payload)
         if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", delivery_email) or len(delivery_email) > 254:
-            return jsonify({"status": "error", "message": "Enter a valid delivery email address."}), 400
+            return checkout_error_response("Enter a valid delivery email address.", 400, stage, customer, draft, payload)
         if not state or len(state) > 100 or not city or len(city) > 120:
-            return jsonify({"status": "error", "message": "Enter a valid state and city or town."}), 400
+            return checkout_error_response("Enter a valid state and city or town.", 400, stage, customer, draft, payload)
         if not address or len(address) > 500 or len(landmark) > 250:
-            return jsonify({"status": "error", "message": "Enter a valid delivery address and optional landmark."}), 400
+            return checkout_error_response("Enter a valid delivery address and optional landmark.", 400, stage, customer, draft, payload)
 
         try:
             product_ids = [item["product_id"] for item in cart]
@@ -1052,17 +1063,17 @@ def create_app():
             db.session.commit()
         except CheckoutError as error:
             db.session.rollback()
-            return jsonify({"status": "error", "message": str(error)}), error.status_code
+            return checkout_error_response(str(error), error.status_code, stage, customer, draft, payload)
         except IntegrityError:
             db.session.rollback()
             if Order.query.filter_by(payment_reference=draft["payment_reference"]).first():
-                return jsonify({"status": "error", "message": "This payment reference has already been used."}), 409
+                return checkout_error_response("This payment reference has already been used.", 409, stage, customer, draft, payload)
             app.logger.exception("Checkout integrity constraint failed.")
-            return jsonify({"status": "error", "message": "The order could not be saved. Your payment details are retained; please try again."}), 500
+            return checkout_error_response("The order could not be saved. Your payment details are retained; please try again.", 500, stage, customer, draft, payload)
         except SQLAlchemyError:
             db.session.rollback()
             app.logger.exception("Checkout database transaction failed.")
-            return jsonify({"status": "error", "message": "The order could not be saved. Your payment details are retained; please try again."}), 500
+            return checkout_error_response("The order could not be saved. Your payment details are retained; please try again.", 500, stage, customer, draft, payload)
 
         session.pop("checkout_draft", None)
         session["cart"] = []
