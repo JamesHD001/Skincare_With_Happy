@@ -137,6 +137,30 @@ class CheckoutHardeningTests(unittest.TestCase):
         with self.client.session_transaction() as session:
             self.assertEqual(session["cart"], [])
 
+    def test_payment_stage_does_not_create_order_or_deduct_stock(self):
+        with self.client.session_transaction() as session:
+            session["cart"] = [{"product_id": 1, "quantity": 2}]
+        response = self.client.post("/checkout", data=self.checkout_data())
+        self.assertEqual(response.status_code, 302)
+        with self.app.app_context():
+            self.assertEqual(Order.query.count(), 0)
+            self.assertEqual(db.session.get(Product, 1).stock, 25)
+        self.assertEqual(len(self.storage.files), 1)
+
+    def test_invalid_delivery_keeps_receipt_and_cart_for_retry(self):
+        with self.client.session_transaction() as session:
+            session["cart"] = [{"product_id": 1, "quantity": 1}]
+        self.client.post("/checkout", data=self.checkout_data())
+        response = self.client.post("/checkout", data=self.delivery_data(delivery_address=""))
+        self.assertEqual(response.status_code, 400)
+        with self.app.app_context():
+            self.assertEqual(Order.query.count(), 0)
+            self.assertEqual(db.session.get(Product, 1).stock, 25)
+        with self.client.session_transaction() as session:
+            self.assertIn("checkout_draft", session)
+            self.assertEqual(len(session["cart"]), 1)
+        self.assertEqual(len(self.storage.files), 1)
+
     def test_shop_to_cart_flow_uses_csrf_and_live_catalog(self):
         response = self.client.get("/shop")
         self.assertEqual(response.status_code, 200)
@@ -199,7 +223,10 @@ class CheckoutHardeningTests(unittest.TestCase):
         with self.app.app_context():
             self.assertEqual(Order.query.count(), 0)
             self.assertEqual(db.session.get(Product, 1).stock, 1)
-        self.assertEqual(self.storage.files, {})
+        self.assertEqual(len(self.storage.files), 1)
+        with self.client.session_transaction() as session:
+            self.assertIn("checkout_draft", session)
+            self.assertEqual(len(session["cart"]), 1)
 
     def test_checkout_requires_configured_private_storage(self):
         self.app.extensions["receipt_storage"] = None
