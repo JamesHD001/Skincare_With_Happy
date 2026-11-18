@@ -34,6 +34,17 @@
 - [ ] Define a timeout policy for payment-verification orders that are never reviewed, so reserved stock is eventually released.
 - [ ] Revisit OPay merchant API integration after merchant onboarding.
 
+## Two-stage checkout and delivery
+- [ ] Stage payment reference and validated receipt privately without creating an order or deducting inventory.
+- [ ] Add a second checkout stage for recipient and delivery details, with server-side validation and CSRF protection.
+- [ ] Preserve staged receipt and cart when delivery validation or stock checks fail; expire and clean up abandoned staged receipts.
+- [ ] Save editable delivery details for signed-in customers while keeping guest checkout account-free.
+- [ ] Store an immutable delivery-details snapshot on each order.
+- [ ] Build a customer-friendly confirmation page with order number, payment status, delivery summary, and next steps.
+- [ ] Add tests for stage separation, delivery validation, duplicate references, stock conflicts, saved addresses, guest checkout, and receipt cleanup.
+- [ ] Update README checkout documentation after implementation.
+- [ ] Test the new migration and checkout flow against local/disposable databases only; do not run production migrations.
+
 ## Admin console
 - [x] Protect admin routes with environment-configured login and CSRF validation.
 - [x] Replace sample dashboard figures and orders with live store metrics.
