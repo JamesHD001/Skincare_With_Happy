@@ -131,4 +131,4 @@ Email verification and customer password recovery remain incomplete. Do not trea
 - [x] Correct the expired-draft test to reassign the nested session draft so Flask persists the expiry change.
 - [x] Align the shop filter test with the intended inclusion of all-skin-type products.
 - [x] Update the admin product-creation test to provide the now-required product image.
-- [ ] Confirm the latest full test run passes; the current run is still in progress.
+- [x] Confirm the latest full test run passes: all 62 tests passed in GitHub Actions run #20, and the subsequent TODO-only run #21 also passed.
