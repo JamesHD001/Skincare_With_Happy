@@ -188,6 +188,22 @@ class CustomerAccountTests(unittest.TestCase):
             },
         )
         self.assertEqual(response.status_code, 302)
+        self.assertIn("stage=delivery", response.location)
+        response = self.client.post(
+            "/checkout",
+            data={
+                "csrf_token": self.csrf_token(),
+                "stage": "delivery",
+                "delivery_recipient_name": "Amina Happy",
+                "delivery_phone": "+2348000000000",
+                "delivery_email": "happy@example.test",
+                "delivery_state": "Oyo",
+                "delivery_city": "Ibadan",
+                "delivery_address": "12 Example Street",
+                "delivery_landmark": "",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
         self.assertIn("/payment?ref=SIGNED-CUSTOMER-ORDER", response.location)
 
         with self.app.app_context():
@@ -218,6 +234,23 @@ class CustomerAccountTests(unittest.TestCase):
             },
         )
         self.assertEqual(response.status_code, 302)
+        self.assertIn("stage=delivery", response.location)
+        response = self.client.post(
+            "/checkout",
+            data={
+                "csrf_token": self.csrf_token(),
+                "stage": "delivery",
+                "delivery_recipient_name": "Guest Buyer",
+                "delivery_phone": "+2348012345678",
+                "delivery_email": "guest@example.test",
+                "delivery_state": "Oyo",
+                "delivery_city": "Ibadan",
+                "delivery_address": "12 Guest Street",
+                "delivery_landmark": "",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/payment?ref=GUEST-CHECKOUT-ORDER", response.location)
         with self.app.app_context():
             order = Order.query.filter_by(payment_reference="GUEST-CHECKOUT-ORDER").one()
             self.assertIsNone(order.customer_id)
