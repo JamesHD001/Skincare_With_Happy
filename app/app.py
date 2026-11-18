@@ -5,7 +5,7 @@ import hmac
 import json
 import re
 import secrets
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal, InvalidOperation
 from functools import wraps
 from io import BytesIO
@@ -859,90 +859,139 @@ def create_app():
         session["cart"] = [
             item for item in cart if item["product_id"] != product_id
         ]
-        return redirect(url_for("cart"))
+        return redirect(url_for    def discard_checkout_draft():
+        draft = session.pop("checkout_draft", None)
+        if not draft:
+            return
+        storage = app.extensions.get("receipt_storage")
+        if storage is not None and draft.get("receipt_key"):
+            try:
+                storage.delete(draft["receipt_key"])
+            except ReceiptStorageError:
+                app.logger.warning("Unable to clean up an expired checkout receipt.")
+
+    def active_checkout_draft(customer):
+        draft = session.get("checkout_draft")
+        if not isinstance(draft, dict):
+            return None
+        if draft.get("expires_at", 0) < datetime.utcnow().timestamp():
+            discard_checkout_draft()
+            return None
+        expected_customer_id = customer.id if customer else None
+        if draft.get("customer_id") != expected_customer_id:
+            discard_checkout_draft()
+            return None
+        return draft
 
     @app.route("/checkout", methods=["GET", "POST"])
     def checkout():
+        customer = get_current_customer()
+        draft = active_checkout_draft(customer)
+
         if request.method == "GET":
-            cart_summary = build_cart_summary(session.get("cart", []))
+            stage = request.args.get("stage", "payment")
+            if stage == "delivery" and not draft:
+                stage = "payment"
             return render_template(
                 "checkout.html",
-                cart_summary=cart_summary,
-                customer=get_current_customer(),
+                cart_summary=build_cart_summary(session.get("cart", [])),
+                customer=customer,
+                stage=stage,
+                draft=draft,
             )
 
         if request.is_json:
-            return jsonify({
-                "status": "error",
-                "message": "Checkout requires a multipart receipt upload.",
-            }), 415
+            return jsonify({"status": "error", "message": "Checkout requires a multipart form submission."}), 415
+
         payload = request.form
+        stage = (payload.get("stage") or "payment").strip().lower()
+
         try:
             cart = parse_cart(session.get("cart", []))
         except CartValidationError as error:
             return jsonify({"status": "error", "message": str(error)}), 400
+        if not cart:
+            return jsonify({"status": "error", "message": "Your cart is empty."}), 400
 
-        customer = get_current_customer()
-        if customer is None:
-            email = (payload.get("email") or "").strip().lower()
-            name = (payload.get("name") or payload.get("customer_name") or "").strip()
-            phone = (payload.get("phone") or payload.get("phone_number") or "").strip()
-        else:
-            email = customer.email
-            name = customer.full_name
-            phone = (
-                (payload.get("phone") or payload.get("phone_number") or "").strip()
-                or customer.phone_number
-                or ""
-            )
-        payment_method = (payload.get("payment_method") or "manual_transfer").strip().lower()
-        payment_reference = (payload.get("reference") or payload.get("transaction_reference") or "").strip()
+        if stage == "payment":
+            if customer is None:
+                email = (payload.get("email") or "").strip().lower()
+                name = (payload.get("name") or "").strip()
+            else:
+                email = customer.email
+                name = customer.full_name
+            phone = (payload.get("phone") or "").strip() or (customer.phone_number if customer else "")
+            method = (payload.get("payment_method") or "manual_transfer").strip().lower()
+            reference = (payload.get("reference") or "").strip()
 
-        if not name or len(name) > 150:
-            return jsonify({"status": "error", "message": "Enter a valid customer name."}), 400
-        if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email) or len(email) > 254:
-            return jsonify({"status": "error", "message": "Enter a valid customer email address."}), 400
-        if len(phone) > 40:
-            return jsonify({"status": "error", "message": "Phone number must be 40 characters or fewer."}), 400
-        if payment_method not in ALLOWED_PAYMENT_METHODS:
-            return jsonify({"status": "error", "message": "Choose a supported payment method."}), 400
-        if not payment_reference or len(payment_reference) > 120:
-            return jsonify({"status": "error", "message": "A payment reference is required for the selected payment method."}), 400
+            if not name or len(name) > 150:
+                return jsonify({"status": "error", "message": "Enter a valid customer name."}), 400
+            if not re.fullmatch(r"[^@\\s]+@[^@\\s]+\\.[^@\\s]+", email) or len(email) > 254:
+                return jsonify({"status": "error", "message": "Enter a valid customer email address."}), 400
+            if len(phone) > 40:
+                return jsonify({"status": "error", "message": "Phone number must be 40 characters or fewer."}), 400
+            if method not in ALLOWED_PAYMENT_METHODS:
+                return jsonify({"status": "error", "message": "Choose a supported payment method."}), 400
+            if not reference or len(reference) > 120:
+                return jsonify({"status": "error", "message": "A payment reference is required."}), 400
+            if Order.query.filter_by(payment_reference=reference).first():
+                return jsonify({"status": "error", "message": "This payment reference has already been used."}), 409
 
-        if payment_reference and Order.query.filter_by(payment_reference=payment_reference).first():
-            return jsonify({"status": "error", "message": "This payment reference has already been used."}), 409
+            storage = app.extensions.get("receipt_storage")
+            if storage is None:
+                return jsonify({"status": "error", "message": "Private receipt storage is not configured. Please try again later."}), 503
+            try:
+                receipt_data, extension, content_type = validate_receipt_upload(
+                    request.files.get("receipt"), MAX_RECEIPT_SIZE_BYTES
+                )
+                receipt_key = storage.save(receipt_data, extension, content_type)
+            except CheckoutError as error:
+                return jsonify({"status": "error", "message": str(error)}), error.status_code
+            except ReceiptStorageError as error:
+                app.logger.warning("Private receipt upload failed: %s", error)
+                return jsonify({"status": "error", "message": "Receipt storage is temporarily unavailable. Please try again later."}), 503
 
-        storage = app.extensions.get("receipt_storage")
-        if storage is None:
-            return jsonify({
-                "status": "error",
-                "message": "Private receipt storage is not configured. Please try again later.",
-            }), 503
-        try:
-            receipt_data, receipt_extension, receipt_content_type = validate_receipt_upload(
-                request.files.get("receipt"), MAX_RECEIPT_SIZE_BYTES
-            )
-        except CheckoutError as error:
-            return jsonify({"status": "error", "message": str(error)}), error.status_code
-        try:
-            receipt_key = storage.save(
-                receipt_data, receipt_extension, receipt_content_type
-            )
-        except ReceiptStorageError as error:
-            app.logger.warning("Private receipt upload failed: %s", error)
-            return jsonify({
-                "status": "error",
-                "message": "Receipt storage is temporarily unavailable. Please try again later.",
-            }), 503
+            discard_checkout_draft()
+            session["checkout_draft"] = {
+                "customer_id": customer.id if customer else None,
+                "name": name,
+                "email": email,
+                "phone": phone,
+                "payment_method": method,
+                "payment_reference": reference,
+                "receipt_key": receipt_key,
+                "expires_at": (datetime.utcnow() + timedelta(hours=2)).timestamp(),
+            }
+            return redirect(url_for("checkout", stage="delivery"))
+
+        if stage != "delivery" or not draft:
+            return jsonify({"status": "error", "message": "Your payment details have expired. Please submit them again."}), 400
+
+        recipient = (payload.get("delivery_recipient_name") or "").strip()
+        delivery_phone = (payload.get("delivery_phone") or "").strip()
+        delivery_email = (payload.get("delivery_email") or "").strip().lower()
+        state = (payload.get("delivery_state") or "").strip()
+        city = (payload.get("delivery_city") or "").strip()
+        address = (payload.get("delivery_address") or "").strip()
+        landmark = (payload.get("delivery_landmark") or "").strip()
+
+        if not recipient or len(recipient) > 150:
+            return jsonify({"status": "error", "message": "Enter the recipient's full name."}), 400
+        if not delivery_phone or len(delivery_phone) > 40:
+            return jsonify({"status": "error", "message": "Enter a valid delivery phone number."}), 400
+        if not re.fullmatch(r"[^@\\s]+@[^@\\s]+\\.[^@\\s]+", delivery_email) or len(delivery_email) > 254:
+            return jsonify({"status": "error", "message": "Enter a valid delivery email address."}), 400
+        if not state or len(state) > 100 or not city or len(city) > 120:
+            return jsonify({"status": "error", "message": "Enter a valid state and city or town."}), 400
+        if not address or len(address) > 500 or len(landmark) > 250:
+            return jsonify({"status": "error", "message": "Enter a valid delivery address and optional landmark."}), 400
 
         try:
             product_ids = [item["product_id"] for item in cart]
             products = {
                 product.id: product
                 for product in Product.query.filter(Product.id.in_(product_ids))
-                .order_by(Product.id)
-                .with_for_update()
-                .all()
+                .order_by(Product.id).with_for_update().all()
             }
             if len(products) != len(product_ids):
                 raise CheckoutError("A product in your cart is no longer available.", 409)
@@ -951,121 +1000,100 @@ def create_app():
             for item in cart:
                 product = products[item["product_id"]]
                 if product.stock < item["quantity"]:
-                    raise CheckoutError(
-                        f"Only {product.stock} unit(s) of {product.name} remain in stock.",
-                        409,
-                    )
+                    raise CheckoutError(f"Only {product.stock} unit(s) of {product.name} remain in stock.", 409)
                 result = db.session.execute(
-                    update(Product)
-                    .where(
-                        Product.id == product.id,
-                        Product.stock >= item["quantity"],
-                    )
-                    .values(stock=Product.stock - item["quantity"])
+                    update(Product).where(
+                        Product.id == product.id, Product.stock >= item["quantity"]
+                    ).values(stock=Product.stock - item["quantity"])
                 )
                 if result.rowcount != 1:
-                    raise CheckoutError(
-                        f"Only {product.stock} unit(s) of {product.name} remain in stock.",
-                        409,
-                    )
+                    raise CheckoutError(f"Only {product.stock} unit(s) of {product.name} remain in stock.", 409)
                 total += product.price * item["quantity"]
 
             order = Order(
                 customer_id=customer.id if customer else None,
-                customer_name=name,
-                user_email=email,
-                phone_number=phone or None,
+                customer_name=draft["name"],
+                user_email=draft["email"],
+                phone_number=draft["phone"] or None,
+                delivery_recipient_name=recipient,
+                delivery_phone=delivery_phone,
+                delivery_email=delivery_email,
+                delivery_state=state,
+                delivery_city=city,
+                delivery_address=address,
+                delivery_landmark=landmark or None,
                 total_amount=total,
                 inventory_deducted=True,
-                payment_method=payment_method,
+                payment_method=draft["payment_method"],
                 payment_status="awaiting_verification",
                 fulfillment_status="pending",
-                payment_reference=payment_reference,
-                receipt_file=receipt_key,
+                payment_reference=draft["payment_reference"],
+                receipt_file=draft["receipt_key"],
             )
             db.session.add(order)
             db.session.flush()
-
             for item in cart:
                 product = products[item["product_id"]]
-                db.session.add(
-                    OrderItem(
-                        order_id=order.id,
-                        product_id=product.id,
-                        quantity=item["quantity"],
-                        unit_price=product.price,
-                    )
-                )
-            db.session.add(
-                PaymentAuditLog(
-                    order_id=order.id,
-                    event="order_created",
-                    details=f"Order created with {payment_method} payment method.",
-                    actor="customer",
-                )
-            )
+                db.session.add(OrderItem(order_id=order.id, product_id=product.id,
+                                         quantity=item["quantity"], unit_price=product.price))
+            db.session.add(PaymentAuditLog(
+                order_id=order.id, event="order_created",
+                details=f"Order created with {draft['payment_method']} payment method.",
+                actor="customer",
+            ))
+            if customer:
+                customer.delivery_state = state
+                customer.delivery_city = city
+                customer.delivery_address = address
+                customer.delivery_landmark = landmark or None
+                customer.phone_number = delivery_phone
             db.session.commit()
         except CheckoutError as error:
             db.session.rollback()
-            try:
-                storage.delete(receipt_key)
-            except ReceiptStorageError:
-                app.logger.exception("Unable to clean up an unused receipt.")
             return jsonify({"status": "error", "message": str(error)}), error.status_code
         except IntegrityError:
             db.session.rollback()
-            try:
-                storage.delete(receipt_key)
-            except ReceiptStorageError:
-                app.logger.exception("Unable to clean up an unused receipt.")
-            if Order.query.filter_by(payment_reference=payment_reference).first():
+            if Order.query.filter_by(payment_reference=draft["payment_reference"]).first():
                 return jsonify({"status": "error", "message": "This payment reference has already been used."}), 409
             app.logger.exception("Checkout integrity constraint failed.")
-            return jsonify({
-                "status": "error",
-                "message": "The order could not be saved. Please try again.",
-            }), 500
+            return jsonify({"status": "error", "message": "The order could not be saved. Your payment details are retained; please try again."}), 500
         except SQLAlchemyError:
             db.session.rollback()
-            try:
-                storage.delete(receipt_key)
-            except ReceiptStorageError:
-                app.logger.exception("Unable to clean up an unused receipt.")
             app.logger.exception("Checkout database transaction failed.")
-            return jsonify({
-                "status": "error",
-                "message": "The order could not be saved. Please try again.",
-            }), 500
+            return jsonify({"status": "error", "message": "The order could not be saved. Your payment details are retained; please try again."}), 500
 
+        session.pop("checkout_draft", None)
         session["cart"] = []
-
         if request.accept_mimetypes.accept_json:
-            return jsonify({
-                "status": "success",
-                "message": "Order submitted for payment verification.",
-                "order_id": order.id,
-                "payment_status": order.payment_status,
-            })
-
-        return redirect(f"/payment?ref={payment_reference}")
+            return jsonify({"status": "success", "message": "Order submitted for payment verification.",
+                            "order_id": order.id, "payment_status": order.payment_status})
+        return redirect(url_for("payment_success", ref=order.payment_reference))
 
     @app.route("/payment")
     def payment_success():
         reference = request.args.get("ref")
         order = Order.query.filter_by(payment_reference=reference).first() if reference else None
-
         if order is None:
             return render_template("success.html", reference=reference, order=None)
-
-        order_dict = {"items": [], "total": order.total_amount}
-        for item in order.items:
-            order_dict["items"].append({
-                "name": item.product.name,
-                "quantity": item.quantity,
-                "price": item.unit_price,
-            })
-
+        order_dict = {
+            "id": order.id,
+            "items": [{"name": item.product.name, "quantity": item.quantity, "price": item.unit_price}
+                      for item in order.items],
+            "total": order.total_amount,
+            "payment_status": order.payment_status,
+            "delivery": {
+                "recipient": order.delivery_recipient_name,
+                "phone": order.delivery_phone,
+                "email": order.delivery_email,
+                "state": order.delivery_state,
+                "city": order.delivery_city,
+                "address": order.delivery_address,
+                "landmark": order.delivery_landmark,
+            },
+        }
         return render_template("success.html", reference=reference, order=order_dict)
+
+der_dict)
 
     @app.route("/admin/orders/<int:order_id>/receipt")
     @admin_required
