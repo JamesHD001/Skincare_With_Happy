@@ -1107,8 +1107,6 @@ def create_app():
         }
         return render_template("success.html", reference=reference, order=order_dict)
 
-der_dict)
-
     @app.route("/admin/orders/<int:order_id>/receipt")
     @admin_required
     def admin_order_receipt(order_id):
