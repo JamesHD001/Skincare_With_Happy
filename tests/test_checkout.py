@@ -351,5 +351,66 @@ class CheckoutHardeningTests(unittest.TestCase):
             self.assertIsNotNone(error)
 
 
+    def test_guest_checkout_creates_order_without_customer_account_and_snapshots_delivery(self):
+        with self.client.session_transaction() as session:
+            session["cart"] = [{"product_id": 1, "quantity": 1}]
+
+        response = self.submit_complete_checkout()
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/payment?ref=TEST-REFERENCE", response.location)
+
+        with self.app.app_context():
+            order = Order.query.one()
+            self.assertIsNone(order.customer_id)
+            self.assertEqual(order.delivery_recipient_name, "Guest Buyer")
+            self.assertEqual(order.delivery_phone, "+2348012345678")
+            self.assertEqual(order.delivery_email, "guest@example.test")
+            self.assertEqual(order.delivery_state, "Oyo")
+            self.assertEqual(order.delivery_city, "Ibadan")
+            self.assertEqual(order.delivery_address, "12 Example Street")
+            self.assertEqual(order.delivery_landmark, "Near the market")
+
+    def test_duplicate_payment_reference_is_rejected_before_receipt_storage(self):
+        with self.client.session_transaction() as session:
+            session["cart"] = [{"product_id": 1, "quantity": 1}]
+        response = self.submit_complete_checkout()
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(len(self.storage.files), 1)
+
+        with self.client.session_transaction() as session:
+            session["cart"] = [{"product_id": 1, "quantity": 1}]
+        response = self.client.post("/checkout", data=self.checkout_data())
+        self.assertEqual(response.status_code, 409)
+        self.assertIn(b"already been used", response.data)
+        self.assertEqual(len(self.storage.files), 1)
+        with self.app.app_context():
+            self.assertEqual(Order.query.count(), 1)
+
+    def test_payment_stage_rejects_invalid_email_address(self):
+        with self.client.session_transaction() as session:
+            session["cart"] = [{"product_id": 1, "quantity": 1}]
+        response = self.client.post(
+            "/checkout", data=self.checkout_data(email="not-an-email")
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn(b"valid customer email", response.data)
+        self.assertEqual(len(self.storage.files), 0)
+
+    def test_delivery_stage_rejects_invalid_email_and_preserves_draft(self):
+        with self.client.session_transaction() as session:
+            session["cart"] = [{"product_id": 1, "quantity": 1}]
+        self.client.post("/checkout", data=self.checkout_data())
+        response = self.client.post(
+            "/checkout",
+            data=self.delivery_data(delivery_email="not-an-email"),
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn(b"valid delivery email", response.data)
+        with self.client.session_transaction() as session:
+            self.assertIn("checkout_draft", session)
+            self.assertEqual(len(session["cart"]), 1)
+        self.assertEqual(len(self.storage.files), 1)
+
+
 if __name__ == "__main__":
     unittest.main()
