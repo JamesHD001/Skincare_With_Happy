@@ -118,7 +118,7 @@ class ProductCatalogTests(unittest.TestCase):
 
         shop_filtered = self.client.get("/shop?type=oily")
         self.assertEqual(shop_filtered.status_code, 200)
-        self.assertEqual(shop_filtered.data.count(b'class="catalog-card"'), 1)
+        self.assertEqual(shop_filtered.data.count(b'class="catalog-card"'), 2)
         self.assertIn(b"Niacinamide Balancing Serum", shop_filtered.data)
         self.assertIn(b"<h2>Oily skin</h2>", shop_filtered.data)
         self.assertEqual(shop_filtered.data.count(b">All skin types</option>"), 1)
