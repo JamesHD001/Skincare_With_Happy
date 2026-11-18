@@ -436,6 +436,14 @@ class LegacyMigrationTests(unittest.TestCase):
                         "updated_at",
                     }.issubset(customer_columns)
                 )
+                self.assertTrue(
+                    {
+                        "delivery_state",
+                        "delivery_city",
+                        "delivery_address",
+                        "delivery_landmark",
+                    }.issubset(customer_columns)
+                )
                 order_columns = {
                     column["name"]: column
                     for column in inspector.get_columns("orders")
@@ -448,6 +456,42 @@ class LegacyMigrationTests(unittest.TestCase):
                 self.assertTrue(product_columns["image_key"]["nullable"])
                 self.assertEqual(order_columns["user_email"]["type"].length, 254)
                 self.assertIn("customer_id", order_columns)
+                self.assertTrue(
+                    {
+                        "delivery_recipient_name",
+                        "delivery_phone",
+                        "delivery_email",
+                        "delivery_state",
+                        "delivery_city",
+                        "delivery_address",
+                        "delivery_landmark",
+                    }.issubset(order_columns)
+                )
+                self.assertTrue(
+                    all(
+                        order_columns[name]["nullable"]
+                        for name in (
+                            "delivery_recipient_name",
+                            "delivery_phone",
+                            "delivery_email",
+                            "delivery_state",
+                            "delivery_city",
+                            "delivery_address",
+                            "delivery_landmark",
+                        )
+                    )
+                )
+                with engine.connect() as connection:
+                    self.assertEqual(
+                        connection.execute(
+                            text(
+                                "SELECT delivery_recipient_name, delivery_phone, "
+                                "delivery_email, delivery_state, delivery_city, "
+                                "delivery_address, delivery_landmark FROM orders WHERE id=31"
+                            )
+                        ).one(),
+                        (None, None, None, None, None, None, None),
+                    )
                 for table_name, column_name in (
                     ("products", "price"),
                     ("orders", "total_amount"),
