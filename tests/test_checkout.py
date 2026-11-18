@@ -469,7 +469,9 @@ class CheckoutHardeningTests(unittest.TestCase):
         self.assertEqual(payment.status_code, 302)
         with self.client.session_transaction() as session:
             receipt_key = session["checkout_draft"]["receipt_key"]
-            session["checkout_draft"]["expires_at"] = 1
+            expired_draft = dict(session["checkout_draft"])
+            expired_draft["expires_at"] = 1
+            session["checkout_draft"] = expired_draft
 
         response = self.client.get("/checkout?stage=delivery")
         self.assertEqual(response.status_code, 200)
