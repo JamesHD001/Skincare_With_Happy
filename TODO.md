@@ -147,7 +147,10 @@ Email verification and customer password recovery remain incomplete. Do not trea
 - [x] Enable HSTS only for production responses.
 - [x] Confirm receipt uploads already request server-side AES256 encryption in the S3 put_object call; no duplicate change needed.
 - [ ] Add automated tests for production DEBUG rejection and security response headers.
-- [ ] Add login, signup, and recovery rate limiting with a shared production-safe store.
+- [x] Add atomic shared-database rate limiting to customer login and signup, with HMAC-hashed IP/identity keys and configurable thresholds.
+- [x] Add a migration for rate-limit storage and a CLI cleanup command for expired counters.
+- [ ] Add automated integration and concurrency tests for authentication rate limiting.
+- [ ] Apply the rate-limit migration to deployment databases only after explicit approval.
 
 ### Remaining audit phases
 - [x] Implement an idempotent 48-hour default timeout policy for awaiting-verification orders, with a configurable CLI override, dry-run mode, atomic inventory restoration, and payment audit records.
