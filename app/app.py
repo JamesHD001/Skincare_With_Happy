@@ -38,6 +38,7 @@ try:
         ADMIN_PASSWORD,
         ADMIN_USERNAME,
         APP_ENV,
+        DEBUG,
         DATABASE_URL,
         DIRECT_DATABASE_URL,
         FOOTER_CONTACT_EMAIL,
@@ -77,6 +78,7 @@ except ImportError:  # pragma: no cover - compatibility for direct script execut
         ADMIN_PASSWORD,
         ADMIN_USERNAME,
         APP_ENV,
+        DEBUG,
         DATABASE_URL,
         DIRECT_DATABASE_URL,
         FOOTER_CONTACT_EMAIL,
@@ -408,6 +410,17 @@ def create_app():
     app.config["PRODUCT_IMAGE_STORAGE_PUBLIC_BASE_URL"] = PRODUCT_IMAGE_STORAGE_PUBLIC_BASE_URL
     app.extensions["receipt_storage"] = create_receipt_storage(app.config)
     app.extensions["product_image_storage"] = create_product_image_storage(app.config)
+
+    @app.after_request
+    def add_security_headers(response):
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("X-Frame-Options", "DENY")
+        response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+        response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+        response.headers.setdefault("Content-Security-Policy", "frame-ancestors 'none'")
+        if APP_ENV == "production":
+            response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+        return response
 
     db.init_app(app)
     Migrate(app, db)
@@ -1479,4 +1492,4 @@ app = create_app()
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=DEBUG)
