@@ -22,9 +22,8 @@ def upgrade() -> None:
         sa.Column("key_hash", sa.String(length=64), nullable=False),
         sa.Column("window_started_at", sa.DateTime(), nullable=False),
         sa.Column("attempts", sa.Integer(), nullable=False, server_default="0"),
-        sa.UniqueConstraint("key_hash", name="uq_auth_rate_limits_key_hash"),
     )
-    op.create_index("ix_auth_rate_limits_key_hash", "auth_rate_limits", ["key_hash"])
+    op.create_index("ix_auth_rate_limits_key_hash", "auth_rate_limits", ["key_hash"], unique=True)
 
 
 def downgrade() -> None:
