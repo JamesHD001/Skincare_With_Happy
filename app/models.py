@@ -8,6 +8,25 @@ from flask_sqlalchemy import SQLAlchemy
 db = SQLAlchemy()
 
 
+from __future__ import annotations
+
+from datetime import datetime
+
+from flask_sqlalchemy import SQLAlchemy
+
+
+db = SQLAlchemy()
+
+
+class AuthRateLimit(db.Model):
+    __tablename__ = "auth_rate_limits"
+
+    id = db.Column(db.Integer, primary_key=True)
+    key_hash = db.Column(db.String(64), nullable=False, unique=True, index=True)
+    window_started_at = db.Column(db.DateTime, nullable=False)
+    attempts = db.Column(db.Integer, nullable=False, default=0)
+
+
 class Product(db.Model):
     __tablename__ = "products"
 
