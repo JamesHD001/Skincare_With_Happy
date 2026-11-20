@@ -6,11 +6,13 @@ on:
       - main
       - refactor/postgresql-payment-foundation
       - feature/two-stage-checkout-delivery
+      - feature/project-wide-audit-remediation
   workflow_dispatch:
   pull_request:
     branches:
       - main
       - refactor/postgresql-payment-foundation
+      - feature/project-wide-audit-remediation
 
 permissions:
   contents: read
