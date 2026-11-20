@@ -136,3 +136,34 @@ Email verification and customer password recovery remain incomplete. Do not trea
 - [x] Confirm the checkout suite passes: all 62 tests passed in GitHub Actions run #20.
 - [x] Add migration assertions for all saved-address and order-snapshot columns, nullable legacy snapshots, and preservation of existing orders.
 - [x] Confirm the expanded migration assertions pass in GitHub Actions run #23 and the latest branch state passes in run #24.
+
+
+## Copilot audit remediation
+
+### Phase 1: baseline security hardening
+- [x] Move Flask development-server debug mode to explicit environment configuration and refuse DEBUG=true in production.
+- [x] Add baseline response security headers: content-type protection, frame denial, referrer policy, permissions policy, and CSP frame-ancestors.
+- [x] Enable HSTS only for production responses.
+- [x] Confirm receipt uploads already request server-side AES256 encryption in the S3 put_object call; no duplicate change needed.
+- [ ] Add automated tests for production DEBUG rejection and security response headers.
+- [ ] Add login, signup, and recovery rate limiting with a shared production-safe store.
+
+### Remaining audit phases
+- [ ] Implement an idempotent timeout policy for awaiting-verification orders and release reserved inventory safely.
+- [ ] Add reliable scheduled cleanup for expired checkout drafts and abandoned receipt objects.
+- [ ] Add private receipt-bucket configuration/preflight checks for every deployment environment.
+- [ ] Add the missing skin quiz template or remove the route if the quiz is no longer part of the product.
+- [ ] Replace naive UTC model timestamps with timezone-aware UTC values and plan a compatible migration if needed.
+- [ ] Complete email verification and single-use, expiring password recovery.
+- [ ] Add pagination to admin orders, customers, and product catalog views.
+- [ ] Add indexes for common payment-status and creation-date filters after query-plan review.
+- [ ] Consolidate duplicate catalog routes without breaking existing URLs.
+- [ ] Review unused Paystack configuration/helper code and retain it only if card payments are on the near-term roadmap.
+- [ ] Align dependency pins and Python runtime across local development, CI, and Vercel.
+- [ ] Expand PostgreSQL migration tests to verify the full migration chain through head.
+- [ ] Add upload and desktop/tablet/mobile checkout integration coverage.
+- [ ] Introduce structured, request-correlated application logging and startup health checks.
+- [ ] Split app routes into focused Flask blueprints and extract checkout/payment/storage services incrementally.
+- [ ] Document backup retention, restore drills, rollback steps, and operational alerts.
+- [ ] Verify repository hygiene for virtual environments, database files, backups, and Python cache artifacts.
+- [ ] Complete a local browser walkthrough before merging; keep production migrations and deployment separately approved.
