@@ -76,6 +76,19 @@ class S3ReceiptStorage:
         except BotoCoreError as error:
             raise ReceiptStorageError("Private receipt storage is unavailable.") from error
 
+    def list_receipts(self, *, older_than):
+        """Yield receipt keys and modification times older than the supplied UTC datetime."""
+        try:
+            paginator = self.client.get_paginator("list_objects_v2")
+            for page in paginator.paginate(Bucket=self.bucket, Prefix="receipts/"):
+                for item in page.get("Contents", []):
+                    key = item.get("Key", "")
+                    modified = item.get("LastModified")
+                    if _RECEIPT_KEY_PATTERN.fullmatch(key) and modified and modified <= older_than:
+                        yield key, modified
+        except (BotoCoreError, ClientError) as error:
+            raise ReceiptStorageError("Unable to list private receipt objects.") from error
+
     def delete(self, key: str) -> None:
         if not _RECEIPT_KEY_PATTERN.fullmatch(key):
             return
