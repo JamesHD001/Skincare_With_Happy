@@ -62,6 +62,7 @@ try:
         SQLALCHEMY_DATABASE_URI,
     )
     from app.models import AdminProfile, Customer, Order, OrderItem, PaymentAuditLog, Product, db
+    from app.order_maintenance import expire_unverified_orders
     from app.receipt_storage import (
         ReceiptNotFound,
         ReceiptStorageError,
@@ -102,6 +103,7 @@ except ImportError:  # pragma: no cover - compatibility for direct script execut
         SQLALCHEMY_DATABASE_URI,
     )
     from models import AdminProfile, Customer, Order, OrderItem, PaymentAuditLog, Product, db
+    from order_maintenance import expire_unverified_orders
     from receipt_storage import (
         ReceiptNotFound,
         ReceiptStorageError,
@@ -392,6 +394,7 @@ def create_app():
     app.config["SECRET_KEY"] = SECRET_KEY
     app.config["SQLALCHEMY_DATABASE_URI"] = SQLALCHEMY_DATABASE_URI
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    app.config["UNVERIFIED_ORDER_EXPIRY_HOURS"] = 48
     app.config["SESSION_COOKIE_HTTPONLY"] = True
     app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
     app.config["SESSION_COOKIE_SECURE"] = APP_ENV == "production"
@@ -642,6 +645,29 @@ def create_app():
             app.logger.exception("Product seeding failed.")
             raise
         click.echo(f"Seeded {added} product(s).")
+
+    @app.cli.command("expire-unverified-orders")
+    @click.option("--dry-run", is_flag=True, help="List eligible orders without changing data.")
+    @click.option("--older-than-hours", type=click.IntRange(1, 720), default=None)
+    def expire_unverified_orders_command(dry_run, older_than_hours):
+        """Release stock reserved by orders awaiting payment verification too long."""
+        hours = older_than_hours or app.config["UNVERIFIED_ORDER_EXPIRY_HOURS"]
+        try:
+            result = expire_unverified_orders(
+                db,
+                older_than_hours=hours,
+                dry_run=dry_run,
+            )
+        except (SQLAlchemyError, RuntimeError, ValueError):
+            db.session.rollback()
+            app.logger.exception("Stale payment-order expiry failed.")
+            raise click.ClickException("Order expiry failed; no partial changes were committed.")
+        click.echo(
+            f"Examined {result['examined']} eligible order(s); "
+            f"expired {result['expired']}. Dry run: {result['dry_run']}."
+        )
+        if result["order_ids"]:
+            click.echo("Order IDs: " + ", ".join(str(value) for value in result["order_ids"]))
 
     @app.route("/")
     def index():
