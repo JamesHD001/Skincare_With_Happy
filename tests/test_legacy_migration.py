@@ -295,7 +295,7 @@ class LegacyMigrationTests(unittest.TestCase):
                         connection.execute(
                             text("SELECT version_num FROM alembic_version")
                         ).scalar_one(),
-                        "20261118_delivery_details",
+                        "20261120_auth_rate_limits",
                     )
             finally:
                 application_engine.dispose()
@@ -358,6 +358,7 @@ class LegacyMigrationTests(unittest.TestCase):
                     {
                         "admin_profiles",
                         "alembic_version",
+                        "auth_rate_limits",
                         "customers",
                         "order_items",
                         "orders",
