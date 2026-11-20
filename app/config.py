@@ -149,4 +149,9 @@ def _configured_secret_key():
 
 SECRET_KEY = _configured_secret_key()
 PORT = int(_read_setting("PORT", default="5000"))
-DEBUG = APP_ENV != "production"
+_debug_setting = _read_setting("DEBUG", default="true" if APP_ENV in {"development", "test"} else "false").lower()
+if _debug_setting not in {"1", "true", "yes", "on", "0", "false", "no", "off"}:
+    raise RuntimeError("DEBUG must be a boolean value.")
+DEBUG = _debug_setting in {"1", "true", "yes", "on"}
+if APP_ENV == "production" and DEBUG:
+    raise RuntimeError("DEBUG cannot be enabled when APP_ENV=production.")
