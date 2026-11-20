@@ -63,6 +63,7 @@ try:
     )
     from app.models import AdminProfile, Customer, Order, OrderItem, PaymentAuditLog, Product, db
     from app.order_maintenance import expire_unverified_orders
+    from app.receipt_maintenance import cleanup_orphaned_receipts
     from app.receipt_storage import (
         ReceiptNotFound,
         ReceiptStorageError,
@@ -104,6 +105,7 @@ except ImportError:  # pragma: no cover - compatibility for direct script execut
     )
     from models import AdminProfile, Customer, Order, OrderItem, PaymentAuditLog, Product, db
     from order_maintenance import expire_unverified_orders
+    from receipt_maintenance import cleanup_orphaned_receipts
     from receipt_storage import (
         ReceiptNotFound,
         ReceiptStorageError,
@@ -668,6 +670,28 @@ def create_app():
         )
         if result["order_ids"]:
             click.echo("Order IDs: " + ", ".join(str(value) for value in result["order_ids"]))
+
+    @app.cli.command("cleanup-orphaned-receipts")
+    @click.option("--dry-run", is_flag=True, help="List eligible objects without deleting them.")
+    @click.option("--older-than-days", type=click.IntRange(1, 365), default=7)
+    def cleanup_orphaned_receipts_command(dry_run, older_than_days):
+        """Delete old private receipt objects that are not attached to an order."""
+        storage = app.extensions.get("receipt_storage")
+        try:
+            result = cleanup_orphaned_receipts(
+                db,
+                storage,
+                older_than_days=older_than_days,
+                dry_run=dry_run,
+            )
+        except (SQLAlchemyError, RuntimeError, ValueError, ReceiptStorageError):
+            db.session.rollback()
+            app.logger.exception("Orphaned receipt cleanup failed.")
+            raise click.ClickException("Receipt cleanup failed; review the storage and database configuration.")
+        click.echo(
+            f"Found {result['examined']} eligible orphaned receipt(s); "
+            f"deleted {result['deleted']}. Dry run: {result['dry_run']}."
+        )
 
     @app.route("/")
     def index():
