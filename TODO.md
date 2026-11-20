@@ -44,7 +44,8 @@
 - [x] Add tests for payment-stage separation, invalid delivery retry, duplicate payment references, stock conflicts, guest checkout, invalid email addresses, signed-in saved-address persistence, immutable order snapshots, and expired receipt cleanup.
 - [x] Add signed-in saved-address persistence and immutable-snapshot tests, plus explicit expired-receipt cleanup tests.
 - [x] Update README checkout documentation after implementation.
-- [ ] Add reliable scheduled cleanup for abandoned staged receipts; current cleanup is opportunistic when an expired draft is revisited.
+- [x] Add a conservative orphaned-receipt cleanup service and manual CLI with dry-run support; it deletes only old storage objects not referenced by persisted orders.
+- [ ] Configure and test a trusted scheduled runner after verifying storage listing permissions and retention policy.
 - [x] Exercise the migration chain against disposable SQLite databases in the automated legacy-schema upgrade tests; verify the new delivery columns and preservation of legacy orders.
 - [x] Verify checkout stages, delivery validation, guest/signed-in flows, saved-address persistence, and immutable order snapshots through the automated test suite (62 tests passed in GitHub Actions run #20).
 - [ ] Perform a browser-based checkout walkthrough against a local development database before merging; do not run production migrations.
