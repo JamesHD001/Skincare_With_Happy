@@ -158,6 +158,53 @@ class CustomerAccountTests(unittest.TestCase):
             self.assertIn("cart", session)
             self.assertNotIn("customer_id", session)
 
+    def test_signin_rate_limit_returns_429_after_configured_attempts(self):
+        self.sign_up()
+        self.client.post("/signout", data={"csrf_token": self.csrf_token()})
+        self.app.config["AUTH_RATE_LIMIT_EMAIL_MAX"] = 2
+        self.app.config["AUTH_RATE_LIMIT_IP_MAX"] = 20
+
+        for _ in range(2):
+            response = self.client.post(
+                "/signin",
+                data={
+                    "csrf_token": self.csrf_token(),
+                    "email": "happy@example.test",
+                    "password": "incorrect-password",
+                },
+            )
+            self.assertEqual(response.status_code, 200)
+
+        limited = self.client.post(
+            "/signin",
+            data={
+                "csrf_token": self.csrf_token(),
+                "email": "happy@example.test",
+                "password": "incorrect-password",
+            },
+        )
+        self.assertEqual(limited.status_code, 429)
+        self.assertEqual(limited.headers.get("Retry-After"), "900")
+        self.assertIn(b"Too many attempts", limited.data)
+
+        with self.app.app_context():
+            from app.models import AuthRateLimit
+            self.assertEqual(AuthRateLimit.query.count(), 2)
+            self.assertTrue(all(len(row.key_hash) == 64 for row in AuthRateLimit.query.all()))
+
+    def test_signup_rate_limit_is_applied_before_account_creation(self):
+        self.app.config["AUTH_RATE_LIMIT_EMAIL_MAX"] = 1
+        self.app.config["AUTH_RATE_LIMIT_IP_MAX"] = 20
+        first = self.sign_up("new@example.test")
+        self.assertEqual(first.status_code, 302)
+        self.client.post("/signout", data={"csrf_token": self.csrf_token()})
+
+        # A different email uses a different identity bucket; the shared IP bucket
+        # remains available until its separate threshold is reached.
+        self.app.config["AUTH_RATE_LIMIT_EMAIL_MAX"] = 1
+        second = self.sign_up("another@example.test")
+        self.assertEqual(second.status_code, 302)
+
     def test_authenticated_checkout_links_order_and_history_ignores_guest_orders(self):
         self.sign_up()
         with self.app.app_context():
