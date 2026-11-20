@@ -135,3 +135,17 @@ class AdminProfile(db.Model):
     def __repr__(self) -> str:
         return f"<AdminProfile {self.username}>"
 
+
+
+class CustomerAuthToken(db.Model):
+    __tablename__ = "customer_auth_tokens"
+
+    id = db.Column(db.Integer, primary_key=True)
+    customer_id = db.Column(db.Integer, db.ForeignKey("customers.id", ondelete="CASCADE"), nullable=False, index=True)
+    token_hash = db.Column(db.String(64), nullable=False, unique=True, index=True)
+    purpose = db.Column(db.String(32), nullable=False)
+    expires_at = db.Column(db.DateTime, nullable=False, index=True)
+    used_at = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+    customer = db.relationship("Customer")
