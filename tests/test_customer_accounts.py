@@ -161,6 +161,10 @@ class CustomerAccountTests(unittest.TestCase):
     def test_signin_rate_limit_returns_429_after_configured_attempts(self):
         self.sign_up()
         self.client.post("/signout", data={"csrf_token": self.csrf_token()})
+        with self.app.app_context():
+            from app.models import AuthRateLimit
+            AuthRateLimit.query.delete()
+            db.session.commit()
         self.app.config["AUTH_RATE_LIMIT_EMAIL_MAX"] = 2
         self.app.config["AUTH_RATE_LIMIT_IP_MAX"] = 20
 
