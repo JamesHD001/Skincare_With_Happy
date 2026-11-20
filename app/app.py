@@ -17,6 +17,7 @@ from flask import (
     abort,
     flash,
     jsonify,
+    make_response,
     redirect,
     render_template,
     request,
@@ -61,7 +62,8 @@ try:
         SECRET_KEY,
         SQLALCHEMY_DATABASE_URI,
     )
-    from app.models import AdminProfile, Customer, Order, OrderItem, PaymentAuditLog, Product, db
+    from app.models import AdminProfile, AuthRateLimit, Customer, Order, OrderItem, PaymentAuditLog, Product, db
+    from app.auth_rate_limiter import consume_auth_attempts, hashed_rate_limit_keys, purge_expired_auth_limits
     from app.order_maintenance import expire_unverified_orders
     from app.receipt_maintenance import cleanup_orphaned_receipts
     from app.receipt_storage import (
@@ -103,7 +105,8 @@ except ImportError:  # pragma: no cover - compatibility for direct script execut
         SECRET_KEY,
         SQLALCHEMY_DATABASE_URI,
     )
-    from models import AdminProfile, Customer, Order, OrderItem, PaymentAuditLog, Product, db
+    from models import AdminProfile, AuthRateLimit, Customer, Order, OrderItem, PaymentAuditLog, Product, db
+    from auth_rate_limiter import consume_auth_attempts, hashed_rate_limit_keys, purge_expired_auth_limits
     from order_maintenance import expire_unverified_orders
     from receipt_maintenance import cleanup_orphaned_receipts
     from receipt_storage import (
@@ -397,6 +400,9 @@ def create_app():
     app.config["SQLALCHEMY_DATABASE_URI"] = SQLALCHEMY_DATABASE_URI
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["UNVERIFIED_ORDER_EXPIRY_HOURS"] = 48
+    app.config["AUTH_RATE_LIMIT_WINDOW_SECONDS"] = 900
+    app.config["AUTH_RATE_LIMIT_EMAIL_MAX"] = 5
+    app.config["AUTH_RATE_LIMIT_IP_MAX"] = 30
     app.config["SESSION_COOKIE_HTTPONLY"] = True
     app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
     app.config["SESSION_COOKIE_SECURE"] = APP_ENV == "production"
@@ -671,6 +677,18 @@ def create_app():
         if result["order_ids"]:
             click.echo("Order IDs: " + ", ".join(str(value) for value in result["order_ids"]))
 
+    @app.cli.command("cleanup-auth-rate-limits")
+    @click.option("--older-than-hours", type=click.IntRange(1, 8760), default=24)
+    def cleanup_auth_rate_limits_command(older_than_hours):
+        """Remove old authentication rate-limit counters."""
+        try:
+            deleted = purge_expired_auth_limits(db, older_than_hours=older_than_hours)
+        except (SQLAlchemyError, RuntimeError, ValueError):
+            db.session.rollback()
+            app.logger.exception("Authentication rate-limit cleanup failed.")
+            raise click.ClickException("Authentication rate-limit cleanup failed.")
+        click.echo(f"Deleted {deleted} expired rate-limit record(s).")
+
     @app.cli.command("cleanup-orphaned-receipts")
     @click.option("--dry-run", is_flag=True, help="List eligible objects without deleting them.")
     @click.option("--older-than-days", type=click.IntRange(1, 365), default=7)
@@ -733,6 +751,39 @@ def create_app():
     def learn():
         return render_template("learn.html")
 
+    def auth_rate_limit_response(template_name, **context):
+        window = app.config["AUTH_RATE_LIMIT_WINDOW_SECONDS"]
+        keys = hashed_rate_limit_keys(
+            SECRET_KEY,
+            request.endpoint or request.path,
+            request.remote_addr or "unknown",
+            request.form.get("email", "").strip().lower(),
+        )
+        try:
+            allowed, retry_after = consume_auth_attempts(
+                db,
+                keys,
+                email_limit=app.config["AUTH_RATE_LIMIT_EMAIL_MAX"],
+                ip_limit=app.config["AUTH_RATE_LIMIT_IP_MAX"],
+                window_seconds=window,
+            )
+        except SQLAlchemyError:
+            db.session.rollback()
+            app.logger.exception("Authentication rate-limit storage failed.")
+            response = make_response(
+                render_template(template_name, **context, rate_limit_error=True), 503
+            )
+            response.headers["Retry-After"] = "60"
+            return response
+        if not allowed:
+            flash("Too many attempts. Please wait before trying again.", "error")
+            response = make_response(
+                render_template(template_name, **context, rate_limited=True), 429
+            )
+            response.headers["Retry-After"] = str(retry_after)
+            return response
+        return None
+
     @app.route("/signup", methods=["GET", "POST"])
     def signup():
         if get_current_customer() is not None:
@@ -744,6 +795,9 @@ def create_app():
             "phone_number": request.form.get("phone_number", "").strip(),
         }
         if request.method == "POST":
+            limited = auth_rate_limit_response("signup.html", form_data=form_data)
+            if limited is not None:
+                return limited
             password = request.form.get("password", "")
             email = form_data["email"].lower()
 
@@ -790,6 +844,9 @@ def create_app():
 
         email = request.form.get("email", "").strip().lower()
         if request.method == "POST":
+            limited = auth_rate_limit_response("signin.html", email=email)
+            if limited is not None:
+                return limited
             customer = Customer.query.filter_by(email=email).first()
             password = request.form.get("password", "")
             if customer is None or not check_password_hash(customer.password_hash, password):
