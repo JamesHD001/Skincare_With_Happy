@@ -149,7 +149,8 @@ Email verification and customer password recovery remain incomplete. Do not trea
 - [ ] Add login, signup, and recovery rate limiting with a shared production-safe store.
 
 ### Remaining audit phases
-- [ ] Implement an idempotent timeout policy for awaiting-verification orders and release reserved inventory safely.
+- [x] Implement an idempotent 48-hour default timeout policy for awaiting-verification orders, with a configurable CLI override, dry-run mode, atomic inventory restoration, and payment audit records.
+- [ ] Decide the final business timeout window before enabling scheduled production execution.
 - [ ] Add reliable scheduled cleanup for expired checkout drafts and abandoned receipt objects.
 - [ ] Add private receipt-bucket configuration/preflight checks for every deployment environment.
 - [ ] Add the missing skin quiz template or remove the route if the quiz is no longer part of the product.
