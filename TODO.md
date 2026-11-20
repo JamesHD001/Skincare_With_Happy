@@ -159,6 +159,11 @@ Email verification and customer password recovery remain incomplete. Do not trea
 - [ ] Add private receipt-bucket configuration/preflight checks for every deployment environment.
 - [ ] Add the missing skin quiz template or remove the route if the quiz is no longer part of the product.
 - [ ] Replace naive UTC model timestamps with timezone-aware UTC values and plan a compatible migration if needed.
+- [x] Add hashed, purpose-scoped, expiring customer authentication token storage and token lifecycle service.
+- [ ] Add customer email-verification state and customer-facing verification workflow.
+- [ ] Implement password-reset request and completion routes with non-enumerating responses.
+- [ ] Connect a real email provider and enable customer-facing email workflows only after approval.
+- [ ] Add dedicated token lifecycle and concurrency tests.
 - [ ] Complete email verification and single-use, expiring password recovery.
 - [ ] Add pagination to admin orders, customers, and product catalog views.
 - [ ] Add indexes for common payment-status and creation-date filters after query-plan review.
