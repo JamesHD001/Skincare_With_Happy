@@ -202,8 +202,11 @@ class CustomerAccountTests(unittest.TestCase):
         # A different email uses a different identity bucket; the shared IP bucket
         # remains available until its separate threshold is reached.
         self.app.config["AUTH_RATE_LIMIT_EMAIL_MAX"] = 1
-        second = self.sign_up("another@example.test")
-        self.assertEqual(second.status_code, 302)
+        second = self.sign_up("new@example.test")
+        self.assertEqual(second.status_code, 429)
+        self.assertEqual(second.headers.get("Retry-After"), "900")
+        with self.app.app_context():
+            self.assertEqual(Customer.query.filter_by(email="new@example.test").count(), 1)
 
     def test_authenticated_checkout_links_order_and_history_ignores_guest_orders(self):
         self.sign_up()
