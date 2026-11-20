@@ -8,16 +8,6 @@ from flask_sqlalchemy import SQLAlchemy
 db = SQLAlchemy()
 
 
-from __future__ import annotations
-
-from datetime import datetime
-
-from flask_sqlalchemy import SQLAlchemy
-
-
-db = SQLAlchemy()
-
-
 class AuthRateLimit(db.Model):
     __tablename__ = "auth_rate_limits"
 
